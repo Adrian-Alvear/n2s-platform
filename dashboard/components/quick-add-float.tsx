@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
-import { Plus, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Plus, Check, Loader2 } from "lucide-react";
 
 export function QuickAddFloat() {
   const [open, setOpen] = useState(false);
@@ -17,9 +18,16 @@ export function QuickAddFloat() {
   const [member, setMember] = useState<Member | "">("");
   const [saved, setSaved] = useState(false);
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!description || !amount || !category || !member) return;
     setSaved(true);
+    await supabase.from("entries").insert({
+      date: new Date().toISOString().slice(0, 10),
+      description,
+      category,
+      amount: parseFloat(amount),
+      member,
+    });
     setTimeout(() => {
       setSaved(false);
       setOpen(false);
@@ -27,7 +35,8 @@ export function QuickAddFloat() {
       setAmount("");
       setCategory("");
       setMember("");
-    }, 1200);
+      window.location.reload();
+    }, 1000);
   }
 
   return (
@@ -96,7 +105,7 @@ export function QuickAddFloat() {
             onClick={handleAdd}
             disabled={!description || !amount || !category || !member || saved}
           >
-            {saved ? <><Check size={15} className="mr-1" /> ¡Guardado!</> : "Guardar gasto"}
+            {saved ? <><Loader2 size={15} className="animate-spin mr-1" /> Guardando...</> : "Guardar gasto"}
           </Button>
         </div>
       </DialogContent>

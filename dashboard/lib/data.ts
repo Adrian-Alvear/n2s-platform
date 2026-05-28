@@ -21,6 +21,7 @@ export const CATEGORIES = [
   "Cumpleaños",
   "Transporte Uber",
   "Mto Carro",
+  "Otros",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
@@ -38,6 +39,7 @@ export const DEFAULT_BUDGETS: Record<Category, number> = {
   Cumpleaños: 33,
   "Transporte Uber": 400,
   "Mto Carro": 100,
+  "Otros": 0,
 };
 
 export const INCOME: Record<string, number> = {
