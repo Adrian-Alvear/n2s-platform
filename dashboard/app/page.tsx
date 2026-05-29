@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DEFAULT_BUDGETS, CATEGORIES, INCOME, MEMBER_COLORS, MEMBERS, getProgressColor, getProgressBg } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { MonthNav } from "@/components/month-nav";
-import { Loader2 } from "lucide-react";
+import { SpendingSheet } from "@/components/spending-sheet";
+import { Loader2, ArrowRight } from "lucide-react";
 
-type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string; };
+type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
 
 const CATEGORY_ICONS: Record<string, string> = {
   Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
   Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", "Otros": "📦",
+  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
 };
 
 const totalIncome = Object.values(INCOME).reduce((s, v) => s + v, 0);
@@ -30,6 +32,7 @@ export default function Overview() {
   const [month, setMonth] = useState(now.getMonth());
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -48,53 +51,50 @@ export default function Overview() {
   const saldo = totalIncome - totalBudget;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8">
 
       {/* Hero card */}
-      <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 text-white p-8 shadow-lg">
-        <div className="flex items-start justify-between mb-6">
+      <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 text-white p-5 md:p-8 shadow-lg">
+        <div className="flex items-start justify-between mb-5 md:mb-6 gap-4">
           <div>
             <p className="text-violet-200 text-sm font-medium mb-1">Saldo disponible</p>
-            <p className="text-5xl font-bold tracking-tight">${saldo.toFixed(2)}</p>
+            <p className="text-4xl md:text-5xl font-bold tracking-tight">${saldo.toFixed(2)}</p>
           </div>
-          <div className="bg-white/10 rounded-xl px-3 py-1.5">
+          <div className="bg-white/10 rounded-xl px-3 py-1.5 shrink-0">
             <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
           </div>
         </div>
-        <div className="flex gap-6 text-sm">
+        <div className="grid grid-cols-2 md:flex md:gap-6 gap-3 text-sm">
           <div>
             <p className="text-violet-300">Ingresos</p>
-            <p className="font-semibold text-lg">${totalIncome.toLocaleString()}</p>
+            <p className="font-semibold text-base md:text-lg">${totalIncome.toLocaleString()}</p>
           </div>
-          <div className="w-px bg-violet-500" />
           <div>
             <p className="text-violet-300">Presupuesto</p>
-            <p className="font-semibold text-lg">${totalBudget.toFixed(0)}</p>
+            <p className="font-semibold text-base md:text-lg">${totalBudget.toFixed(0)}</p>
           </div>
-          <div className="w-px bg-violet-500" />
           <div>
             <p className="text-violet-300">Gastado</p>
-            <p className={`font-semibold text-lg ${totalSpent > totalBudget ? "text-red-300" : ""}`}>
+            <p className={`font-semibold text-base md:text-lg ${totalSpent > totalBudget ? "text-red-300" : ""}`}>
               ${totalSpent.toFixed(0)}
             </p>
           </div>
-          <div className="w-px bg-violet-500" />
           <div>
             <p className="text-violet-300">Restante</p>
-            <p className={`font-semibold text-lg ${(totalBudget - totalSpent) < 0 ? "text-red-300" : "text-emerald-300"}`}>
+            <p className={`font-semibold text-base md:text-lg ${(totalBudget - totalSpent) < 0 ? "text-red-300" : "text-emerald-300"}`}>
               ${(totalBudget - totalSpent).toFixed(0)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
 
           {/* Category grid */}
           <div>
             <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Categorías</h2>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {CATEGORIES.map((cat) => {
                 const spent = spentByCategory[cat] ?? 0;
                 const budget = DEFAULT_BUDGETS[cat];
@@ -120,7 +120,12 @@ export default function Overview() {
 
           {/* Recent transactions */}
           <div>
-            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Últimos movimientos</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Últimos movimientos</h2>
+              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-violet-600" onClick={() => setSheetOpen(true)}>
+                Ver todos <ArrowRight size={13} />
+              </Button>
+            </div>
             <Card>
               <CardContent className="p-0 divide-y divide-border">
                 {loading && (
@@ -133,17 +138,17 @@ export default function Overview() {
                 )}
                 {entries.slice(0, 8).map((e) => (
                   <div key={e.id} className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900 flex items-center justify-center text-lg">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900 flex items-center justify-center text-lg shrink-0">
                         {CATEGORY_ICONS[e.category]}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{e.description}</p>
-                        <p className="text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{e.description}</p>
+                        <p className="text-xs text-muted-foreground truncate">{e.category} · {formatDateTime(e.expense_at)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span>
                       <span className="text-sm font-bold text-red-500">-${e.amount.toFixed(2)}</span>
                     </div>
                   </div>
@@ -193,6 +198,8 @@ export default function Overview() {
           </Card>
         </div>
       </div>
+
+      <SpendingSheet open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 }
