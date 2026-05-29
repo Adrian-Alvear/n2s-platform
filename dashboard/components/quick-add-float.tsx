@@ -22,7 +22,7 @@ export function QuickAddFloat() {
     if (!description || !amount || !category || !member) return;
     setSaved(true);
     await supabase.from("entries").insert({
-      date: new Date().toISOString().slice(0, 10),
+      expense_at: new Date().toISOString(),
       description,
       category,
       amount: parseFloat(amount),

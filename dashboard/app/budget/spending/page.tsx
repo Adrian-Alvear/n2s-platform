@@ -13,14 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { MonthNav } from "@/components/month-nav";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
-type Entry = {
-  id: number;
-  expense_at: string;
-  description: string;
-  category: string;
-  amount: number;
-  member: string;
-};
+type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
 
 function formatDateTime(ts: string) {
   const d = new Date(ts);
@@ -28,12 +21,7 @@ function formatDateTime(ts: string) {
     d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
 }
 
-function EntryForm({
-  initial,
-  onSave,
-  onCancel,
-  saving,
-}: {
+function EntryForm({ initial, onSave, onCancel, saving }: {
   initial?: Partial<Entry>;
   onSave: (data: { description: string; amount: string; category: Category | ""; member: Member | "" }) => void;
   onCancel: () => void;
@@ -80,7 +68,7 @@ function EntryForm({
         <Button className="flex-1 bg-violet-600 hover:bg-violet-700 text-white"
           onClick={() => onSave({ description, amount, category, member })}
           disabled={!description || !amount || !category || !member || saving}>
-          {saving ? <><Loader2 size={15} className="animate-spin mr-1" /> Guardando...</> : "Guardar"}
+          {saving ? <><Loader2 size={15} className="animate-spin mr-1" />Guardando...</> : "Guardar"}
         </Button>
       </div>
     </div>
@@ -144,8 +132,8 @@ export default function Spending() {
   const total = filtered.reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
           <p className="text-muted-foreground text-sm mt-1">Registra y revisa todos los gastos</p>
@@ -154,7 +142,7 @@ export default function Spending() {
           <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus size={15} /> Agregar</Button>
+              <Button className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"><Plus size={15} /> Agregar</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-sm">
               <DialogHeader><DialogTitle>Nuevo gasto</DialogTitle></DialogHeader>
@@ -164,9 +152,9 @@ export default function Spending() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Select value={filterMember} onValueChange={setFilterMember}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Persona" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Persona" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             {MEMBERS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -183,55 +171,44 @@ export default function Spending() {
           <Button variant="ghost" size="sm" onClick={() => { setFilterMember("all"); setFilterCategory("all"); }}>Limpiar</Button>
         )}
         <span className="ml-auto text-sm text-muted-foreground">
-          {filtered.length} registros · Total: <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
+          {filtered.length} registros · <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
         </span>
       </div>
 
-      {/* Edit dialog */}
       <Dialog open={!!editEntry} onOpenChange={(o) => { if (!o) setEditEntry(null); }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Editar gasto</DialogTitle></DialogHeader>
-          {editEntry && (
-            <EntryForm initial={editEntry} onSave={saveEdit} onCancel={() => setEditEntry(null)} saving={saving} />
-          )}
+          {editEntry && <EntryForm initial={editEntry} onSave={saveEdit} onCancel={() => setEditEntry(null)} saving={saving} />}
         </DialogContent>
       </Dialog>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha y hora</TableHead>
                 <TableHead>Descripción</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Persona</TableHead>
+                <TableHead className="hidden sm:table-cell">Categoría</TableHead>
+                <TableHead className="hidden sm:table-cell">Persona</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && (
-                <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground"><Loader2 className="animate-spin inline mr-2" size={16} />Cargando...</TableCell></TableRow>
-              )}
-              {!loading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">No hay gastos registrados este mes</TableCell></TableRow>
-              )}
+              {loading && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground"><Loader2 className="animate-spin inline mr-2" size={16} />Cargando...</TableCell></TableRow>}
+              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">No hay gastos este mes</TableCell></TableRow>}
               {filtered.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{formatDateTime(e.expense_at)}</TableCell>
                   <TableCell className="font-medium">{e.description}</TableCell>
-                  <TableCell><span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{e.category}</span></TableCell>
-                  <TableCell><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as Member] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span></TableCell>
+                  <TableCell className="hidden sm:table-cell"><span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{e.category}</span></TableCell>
+                  <TableCell className="hidden sm:table-cell"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as Member] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span></TableCell>
                   <TableCell className="text-right font-semibold">${e.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}>
-                        <Pencil size={13} />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}>
-                        <Trash2 size={13} />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}><Pencil size={13} /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}><Trash2 size={13} /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
