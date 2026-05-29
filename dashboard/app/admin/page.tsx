@@ -16,6 +16,7 @@ type PlatformUser = { id: string; email: string; name: string; role: "admin" | "
 type Permission = { feature: string; role: "member" | "viewer"; allowed: boolean };
 
 const FEATURES = [
+  "Access Portal",
   "View Budget",
   "Add / Edit Expenses",
   "Delete Expenses",
