@@ -98,7 +98,7 @@ export default function AdminPanel() {
           <div className="divide-y divide-border">
             {loading && <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>}
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between px-6 py-4 gap-4">
+              <div key={u.id} className="flex items-center justify-between px-4 sm:px-6 py-3 gap-3">
                 <div className="min-w-0">
                   <p className="font-medium text-sm">{u.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
@@ -109,7 +109,7 @@ export default function AdminPanel() {
                     onValueChange={(v) => updateRole(u.id, v)}
                     disabled={u.email === currentUser?.email}
                   >
-                    <SelectTrigger className="h-7 w-28 text-xs">
+                    <SelectTrigger className="h-7 w-24 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -118,7 +118,7 @@ export default function AdminPanel() {
                       <SelectItem value="viewer">Viewer</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[u.role]}`}>{u.role}</span>
+                  <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[u.role]}`}>{u.role}</span>
                   {u.email !== currentUser?.email && (
                     <Button
                       variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"

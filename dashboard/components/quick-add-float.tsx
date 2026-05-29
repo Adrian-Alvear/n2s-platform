@@ -42,7 +42,7 @@ export function QuickAddFloat() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-50">
+        <button className="fixed bottom-24 right-5 md:bottom-8 md:right-8 w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-40">
           <Plus size={24} />
         </button>
       </DialogTrigger>
