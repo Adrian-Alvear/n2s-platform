@@ -7,11 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { getSupabase } from "@/lib/supabase";
 import { useUser } from "@/lib/user-context";
-import { Shield, Plus, Trash2, Check, X } from "lucide-react";
+import { Shield, Plus, Trash2, Pencil, Check, Loader2 } from "lucide-react";
 
 type PlatformUser = { id: string; email: string; name: string; role: "admin" | "member" | "viewer"; created_at: string };
+type Permission = { feature: string; role: "member" | "viewer"; allowed: boolean };
+
+const FEATURES = [
+  "View Budget",
+  "Add / Edit Expenses",
+  "Delete Expenses",
+  "View Chat",
+  "View News",
+] as const;
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
@@ -19,38 +29,85 @@ const ROLE_COLORS: Record<string, string> = {
   viewer: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 };
 
-const PERMISSIONS: { feature: string; admin: boolean; member: boolean; viewer: boolean }[] = [
-  { feature: "View Dashboard", admin: true, member: true, viewer: true },
-  { feature: "View Budget", admin: true, member: true, viewer: true },
-  { feature: "Add / Edit Expenses", admin: true, member: true, viewer: false },
-  { feature: "Delete Expenses", admin: true, member: true, viewer: false },
-  { feature: "View Chat", admin: true, member: true, viewer: false },
-  { feature: "View News", admin: true, member: true, viewer: true },
-  { feature: "Admin Panel", admin: true, member: false, viewer: false },
-];
+function isAllowed(permissions: Permission[], feature: string, role: "member" | "viewer") {
+  return permissions.find((p) => p.feature === feature && p.role === role)?.allowed ?? false;
+}
 
 export default function AdminPanel() {
   const { user: currentUser } = useUser();
+
+  // Users state
   const [users, setUsers] = useState<PlatformUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
+
+  // Permissions state
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [permsLoading, setPermsLoading] = useState(true);
+
+  // Add user dialog
   const [addOpen, setAddOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<"member" | "viewer">("member");
-  const [saving, setSaving] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
 
-  useEffect(() => { fetchUsers(); }, []);
+  // Edit user dialog
+  const [editUser, setEditUser] = useState<PlatformUser | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState<PlatformUser["role"]>("member");
+  const [editSaving, setEditSaving] = useState(false);
+
+  useEffect(() => {
+    fetchUsers();
+    fetchPermissions();
+  }, []);
 
   async function fetchUsers() {
-    setLoading(true);
+    setUsersLoading(true);
     const { data } = await getSupabase().from("platform_users").select("*").order("created_at");
     setUsers(data ?? []);
-    setLoading(false);
+    setUsersLoading(false);
   }
 
-  async function updateRole(id: string, role: string) {
-    await getSupabase().from("platform_users").update({ role }).eq("id", id);
-    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, role: role as PlatformUser["role"] } : u));
+  async function fetchPermissions() {
+    setPermsLoading(true);
+    const { data } = await getSupabase().from("role_permissions").select("feature, role, allowed");
+    setPermissions(data ?? []);
+    setPermsLoading(false);
+  }
+
+  async function togglePermission(feature: string, role: "member" | "viewer", current: boolean) {
+    const next = !current;
+    setPermissions((prev) =>
+      prev.map((p) => p.feature === feature && p.role === role ? { ...p, allowed: next } : p)
+    );
+    await getSupabase()
+      .from("role_permissions")
+      .update({ allowed: next })
+      .eq("feature", feature)
+      .eq("role", role);
+  }
+
+  function openEdit(u: PlatformUser) {
+    setEditUser(u);
+    setEditName(u.name);
+    setEditEmail(u.email);
+    setEditRole(u.role);
+  }
+
+  async function saveEdit() {
+    if (!editUser) return;
+    setEditSaving(true);
+    await getSupabase()
+      .from("platform_users")
+      .update({ name: editName, email: editEmail, role: editRole })
+      .eq("id", editUser.id);
+    setUsers((prev) =>
+      prev.map((u) => u.id === editUser.id ? { ...u, name: editName, email: editEmail, role: editRole } : u)
+    );
+    setEditSaving(false);
+    setEditUser(null);
   }
 
   async function deleteUser(id: string) {
@@ -60,7 +117,7 @@ export default function AdminPanel() {
 
   async function addUser() {
     if (!newEmail || !newName) return;
-    setSaving(true);
+    setAddSaving(true);
     const { data } = await getSupabase()
       .from("platform_users")
       .insert({ email: newEmail, name: newName, role: newRole })
@@ -68,7 +125,7 @@ export default function AdminPanel() {
       .single();
     if (data) setUsers((prev) => [...prev, data]);
     setNewEmail(""); setNewName(""); setNewRole("member");
-    setSaving(false);
+    setAddSaving(false);
     setAddOpen(false);
   }
 
@@ -96,7 +153,7 @@ export default function AdminPanel() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
-            {loading && <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>}
+            {usersLoading && <div className="py-8 text-center text-muted-foreground text-sm"><Loader2 className="animate-spin inline mr-2" size={14} />Loading...</div>}
             {users.map((u) => (
               <div key={u.id} className="flex items-center justify-between px-4 sm:px-6 py-3 gap-3">
                 <div className="min-w-0">
@@ -104,26 +161,12 @@ export default function AdminPanel() {
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Select
-                    value={u.role}
-                    onValueChange={(v) => updateRole(u.id, v)}
-                    disabled={u.email === currentUser?.email}
-                  >
-                    <SelectTrigger className="h-7 w-24 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[u.role]}`}>{u.role}</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEdit(u)}>
+                    <Pencil size={13} />
+                  </Button>
                   {u.email !== currentUser?.email && (
-                    <Button
-                      variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => deleteUser(u.id)}
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteUser(u.id)}>
                       <Trash2 size={13} />
                     </Button>
                   )}
@@ -137,32 +180,43 @@ export default function AdminPanel() {
       {/* Permissions matrix */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Permissions by Role</CardTitle>
+          <div>
+            <CardTitle className="text-sm font-semibold">Permissions by Role</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">Admin always has full access. Toggle Member and Viewer permissions below.</p>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-muted-foreground">Feature</th>
-                  <th className="px-4 py-3 text-xs font-medium text-violet-600">Admin</th>
-                  <th className="px-4 py-3 text-xs font-medium text-blue-600">Member</th>
-                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Viewer</th>
+                  <th className="text-left px-4 sm:px-6 py-3 text-xs font-medium text-muted-foreground">Feature</th>
+                  <th className="px-4 py-3 text-xs font-medium text-violet-600 text-center">Admin</th>
+                  <th className="px-4 py-3 text-xs font-medium text-blue-600 text-center">Member</th>
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-center">Viewer</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {PERMISSIONS.map((p) => (
-                  <tr key={p.feature} className="hover:bg-muted/40 transition-colors">
-                    <td className="px-6 py-3 font-medium text-sm">{p.feature}</td>
-                    {(["admin", "member", "viewer"] as const).map((role) => (
-                      <td key={role} className="px-4 py-3 text-center">
-                        {p[role]
-                          ? <Check size={15} className="text-emerald-500 inline" />
-                          : <X size={15} className="text-muted-foreground/40 inline" />}
+                {permsLoading ? (
+                  <tr><td colSpan={4} className="text-center py-8 text-muted-foreground text-sm"><Loader2 className="animate-spin inline mr-2" size={14} />Loading...</td></tr>
+                ) : (
+                  FEATURES.map((feature) => (
+                    <tr key={feature} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-4 sm:px-6 py-3 font-medium text-sm">{feature}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Check size={15} className="text-emerald-500 inline" />
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      {(["member", "viewer"] as const).map((role) => (
+                        <td key={role} className="px-4 py-3 text-center">
+                          <Switch
+                            checked={isAllowed(permissions, feature, role)}
+                            onCheckedChange={() => togglePermission(feature, role, isAllowed(permissions, feature, role))}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -174,9 +228,7 @@ export default function AdminPanel() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Add User</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-1">
-            <p className="text-xs text-muted-foreground">
-              Add the user here, then invite them via Cloudflare Access to grant site access.
-            </p>
+            <p className="text-xs text-muted-foreground">Add the user here, then invite them via Cloudflare Access to grant site access.</p>
             <div className="space-y-1.5">
               <Label>Name</Label>
               <Input placeholder="Javi" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
@@ -197,9 +249,45 @@ export default function AdminPanel() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-violet-600 hover:bg-violet-700 text-white"
-                onClick={addUser} disabled={!newEmail || !newName || saving}>
-                {saving ? "Adding..." : "Add User"}
+              <Button className="flex-1 bg-violet-600 hover:bg-violet-700 text-white" onClick={addUser} disabled={!newEmail || !newName || addSaving}>
+                {addSaving ? "Adding..." : "Add User"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit user dialog */}
+      <Dialog open={!!editUser} onOpenChange={(o) => { if (!o) setEditUser(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
+          <div className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as PlatformUser["role"])} disabled={editUser?.email === currentUser?.email}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+              {editUser?.email === currentUser?.email && (
+                <p className="text-xs text-muted-foreground">You can&apos;t change your own role.</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditUser(null)}>Cancel</Button>
+              <Button className="flex-1 bg-violet-600 hover:bg-violet-700 text-white" onClick={saveEdit} disabled={!editName || !editEmail || editSaving}>
+                {editSaving ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>
