@@ -77,8 +77,8 @@ export default function Home() {
       href: "/news",
       color: "text-emerald-600",
       bg: "bg-emerald-50 dark:bg-emerald-950",
-      live: false,
-      stat: "Coming soon",
+      live: true,
+      stat: "AI · Soccer · NBA · UFC",
     },
     {
       icon: StickyNote,
