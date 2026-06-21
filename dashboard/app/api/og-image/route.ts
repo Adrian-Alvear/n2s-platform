@@ -37,8 +37,14 @@ export async function GET(request: Request) {
       html.match(/<meta[^>]+content="([^"]+)"[^>]+name="twitter:image"/i)?.[1] ||
       "";
 
-    return Response.json({ image });
+    return Response.json({ image }, {
+      // og:images never change for a given article — cache hard at the edge
+      headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" },
+    });
   } catch {
-    return Response.json({ image: "" });
+    // Cache misses briefly too, so a flaky page doesn't get hammered
+    return Response.json({ image: "" }, {
+      headers: { "Cache-Control": "public, s-maxage=300" },
+    });
   }
 }

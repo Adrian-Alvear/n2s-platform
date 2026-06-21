@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2, ExternalLink, X, Clock, Calendar, Plus, Rss, Search, Copy, Check } from "lucide-react";
+import { Loader2, ExternalLink, X, Clock, Calendar, Plus, Rss, Search, Copy, Check, Settings2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -18,20 +18,24 @@ type CustomFeed = { id: string; label: string; type: "topic" | "url"; value: str
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const BASE_CATEGORIES = [
-  { key: "ai",     label: "AI",     active: "bg-violet-600",  badge: "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300",  dot: "bg-violet-500" },
-  { key: "soccer", label: "Soccer", active: "bg-emerald-600", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300", dot: "bg-emerald-500" },
-  { key: "nba",    label: "NBA",    active: "bg-orange-500",  badge: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",  dot: "bg-orange-400" },
-  { key: "ufc",    label: "UFC",    active: "bg-red-600",     badge: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",     dot: "bg-red-500" },
+  { key: "ai",       label: "AI",       active: "bg-violet-600",  badge: "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300",     dot: "bg-violet-500" },
+  { key: "soccer",   label: "Soccer",   active: "bg-emerald-600", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",  dot: "bg-emerald-500" },
+  { key: "nba",      label: "NBA",      active: "bg-orange-500",  badge: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",     dot: "bg-orange-400" },
+  { key: "ufc",      label: "UFC",      active: "bg-red-600",     badge: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",        dot: "bg-red-500" },
+  { key: "colombia", label: "Colombia", active: "bg-yellow-500",  badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",     dot: "bg-yellow-400" },
+  { key: "nyt",      label: "NYT",      active: "bg-zinc-800",    badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",       dot: "bg-zinc-600" },
 ];
 
 const CUSTOM_COLOR = { active: "bg-sky-600", badge: "bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300", dot: "bg-sky-500" };
 
 const FALLBACKS: Record<string, string[]> = {
-  ai:     ["https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80","https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80","https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80"],
-  soccer: ["https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80","https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80","https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&q=80"],
-  nba:    ["https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80","https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=800&q=80","https://images.unsplash.com/photo-1627627256672-027a4613d028?w=800&q=80"],
-  ufc:    ["https://images.unsplash.com/photo-1549476464-37392f717541?w=800&q=80","https://images.unsplash.com/photo-1517438984742-1262db08379e?w=800&q=80","https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=800&q=80"],
-  custom: ["https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80","https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"],
+  ai:       ["https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80","https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80","https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80"],
+  soccer:   ["https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80","https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80","https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&q=80"],
+  nba:      ["https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&q=80","https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=800&q=80","https://images.unsplash.com/photo-1627627256672-027a4613d028?w=800&q=80"],
+  ufc:      ["https://images.unsplash.com/photo-1549476464-37392f717541?w=800&q=80","https://images.unsplash.com/photo-1517438984742-1262db08379e?w=800&q=80","https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=800&q=80"],
+  colombia: ["https://images.unsplash.com/photo-1588392382834-a891154bca4d?w=800&q=80","https://images.unsplash.com/photo-1512813195386-6cf811ad3542?w=800&q=80","https://images.unsplash.com/photo-1518182170546-07661fd94132?w=800&q=80"],
+  nyt:      ["https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80","https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80","https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80"],
+  custom:   ["https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80","https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80"],
 };
 
 function getFallback(key: string, index: number) {
@@ -72,16 +76,37 @@ function ArticleImg({ rssImage, link, fallback, alt, className }: {
     fetched.current = false;
   }, [rssImage, link]);
 
-  useEffect(() => {
-    if (src || fetched.current || !link) return;
+  // Fetch og:image when: no rss image at all, OR rss image failed to load
+  function tryOgImage() {
+    if (fetched.current || !link) return;
     fetched.current = true;
     fetch(`/api/og-image?url=${encodeURIComponent(link)}`)
       .then((r) => r.json())
-      .then(({ image }) => { if (image) setSrc(image); })
+      .then(({ image }) => { if (image) { setSrc(image); setErr(false); } })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    if (!src) tryOgImage();
   }, [src, link]);
 
-  return <img src={(!src || err) ? fallback : src} alt={alt} className={`${className} object-cover`} onError={() => setErr(true)} />;
+  const imgSrc = (!src || err) ? fallback : src;
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className={`${className} object-cover`}
+      onError={() => {
+        if (!err) {
+          setErr(true);
+          // If rss image failed, try og:image before giving up
+          if (src && src !== fallback) tryOgImage();
+        }
+      }}
+    />
+  );
 }
 
 // ─── Score strip ─────────────────────────────────────────────────────────────
@@ -379,12 +404,19 @@ function ArticleReader({ item, open, onClose, badge, fallback }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const LS_KEY = "n2s_custom_feeds";
+const LS_HIDDEN_KEY = "n2s_hidden_tabs";
 
 function loadCustomFeeds(): CustomFeed[] {
   try { return JSON.parse(localStorage.getItem(LS_KEY) ?? "[]"); } catch { return []; }
 }
 function saveCustomFeeds(feeds: CustomFeed[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(feeds));
+}
+function loadHiddenTabs(): string[] {
+  try { return JSON.parse(localStorage.getItem(LS_HIDDEN_KEY) ?? "[]"); } catch { return []; }
+}
+function saveHiddenTabs(keys: string[]) {
+  localStorage.setItem(LS_HIDDEN_KEY, JSON.stringify(keys));
 }
 
 export default function News() {
@@ -396,24 +428,39 @@ export default function News() {
   const [selected, setSelected] = useState<NewsItem | null>(null);
   const [readerOpen, setReaderOpen] = useState(false);
   const [customFeeds, setCustomFeeds] = useState<CustomFeed[]>([]);
+  const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Load persisted custom feeds after mount (avoid SSR mismatch)
-  useEffect(() => { setCustomFeeds(loadCustomFeeds()); setMounted(true); }, []);
-
   useEffect(() => {
+    setCustomFeeds(loadCustomFeeds());
+    setHiddenTabs(loadHiddenTabs());
+    setMounted(true);
+  }, []);
+
+  // Soccer scores: fetch once, then poll every 60s ONLY while the soccer tab is
+  // open and the page is visible — avoids constant background requests.
+  useEffect(() => {
+    if (category !== "soccer") return;
     function fetchScores() {
       fetch("/api/soccer-scores").then(r => r.json()).then(({ events }) => setScores(events ?? [])).catch(() => {});
     }
     fetchScores();
-    const t = setInterval(fetchScores, 60_000);
-    return () => clearInterval(t);
-  }, []);
+    let t: ReturnType<typeof setInterval> | null = null;
+    const start = () => { if (!t) t = setInterval(fetchScores, 60_000); };
+    const stop = () => { if (t) { clearInterval(t); t = null; } };
+    const onVis = () => (document.hidden ? stop() : (fetchScores(), start()));
+    start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+  }, [category]);
 
+  // UFC events only needed on the UFC tab
   useEffect(() => {
+    if (category !== "ufc") return;
     fetch("/api/ufc-events").then(r => r.json()).then(({ events }) => setUfcEvents(events ?? [])).catch(() => {});
-  }, []);
+  }, [category]);
 
   useEffect(() => {
     setLoading(true);
@@ -447,6 +494,15 @@ export default function News() {
     if (category === id) setCategory("ai");
   }
 
+  function toggleTab(key: string) {
+    const updated = hiddenTabs.includes(key)
+      ? hiddenTabs.filter(k => k !== key)
+      : [...hiddenTabs, key];
+    setHiddenTabs(updated);
+    saveHiddenTabs(updated);
+    if (updated.includes(category)) setCategory(BASE_CATEGORIES.find(c => !updated.includes(c.key))?.key ?? "ai");
+  }
+
   function openArticle(item: NewsItem) { setSelected(item); setReaderOpen(true); }
 
   const customFeed = customFeeds.find(f => f.id === category);
@@ -468,7 +524,7 @@ export default function News() {
       {/* Tabs */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex bg-muted p-1 rounded-xl gap-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          {BASE_CATEGORIES.map((c) => (
+          {BASE_CATEGORIES.filter(c => !hiddenTabs.includes(c.key)).map((c) => (
             <button
               key={c.key}
               onClick={() => setCategory(c.key)}
@@ -505,7 +561,46 @@ export default function News() {
         >
           <Plus size={13} /> Add
         </button>
+
+        {/* Manage tabs button */}
+        <button
+          onClick={() => setManageOpen(true)}
+          className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+          title="Manage tabs"
+        >
+          <Settings2 size={16} />
+        </button>
       </div>
+
+      {/* Manage tabs dialog */}
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Manage tabs</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1 pt-1">
+            {BASE_CATEGORIES.map((c) => {
+              const hidden = hiddenTabs.includes(c.key);
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => toggleTab(c.key)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
+                    <span className="text-sm font-medium">{c.label}</span>
+                  </div>
+                  <div className={`w-9 h-5 rounded-full transition-colors relative ${hidden ? "bg-muted-foreground/20" : "bg-emerald-500"}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${hidden ? "left-0.5" : "left-4.5"}`} />
+                  </div>
+                </button>
+              );
+            })}
+            <p className="text-xs text-muted-foreground px-3 pt-2">Custom tabs can be removed using the × on each tab.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Soccer matches */}
       {category === "soccer" && scores.length > 0 && (

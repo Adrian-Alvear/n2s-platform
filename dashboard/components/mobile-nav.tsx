@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/lib/user-context";
-import { LayoutDashboard, Wallet, MessageSquare, Shield } from "lucide-react";
+import { LayoutDashboard, Wallet, Newspaper, MessageSquare } from "lucide-react";
 
 export function MobileNav() {
   const pathname = usePathname();
@@ -12,10 +12,8 @@ export function MobileNav() {
   const nav = [
     { href: "/", label: "Home", icon: LayoutDashboard, match: (p: string) => p === "/" },
     { href: "/budget", label: "Budget", icon: Wallet, match: (p: string) => p.startsWith("/budget") },
+    { href: "/news", label: "News", icon: Newspaper, match: (p: string) => p.startsWith("/news") },
     { href: "/chat", label: "Chat", icon: MessageSquare, match: (p: string) => p === "/chat" },
-    ...(user?.role === "admin"
-      ? [{ href: "/admin", label: "Admin", icon: Shield, match: (p: string) => p.startsWith("/admin") }]
-      : []),
   ];
 
   return (

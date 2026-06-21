@@ -84,5 +84,7 @@ export async function GET() {
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
 
-  return Response.json({ events, date: dateParam });
+  return Response.json({ events, date: dateParam }, {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+  });
 }

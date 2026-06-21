@@ -40,11 +40,28 @@ const FEEDS: Record<string, { url: string; source: string }[]> = {
     { url: "https://bleacherreport.com/nba.rss", source: "Bleacher Report" },
   ],
   ufc: [
-    { url: "https://news.google.com/rss/search?q=UFC+MMA+fight+2026&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
+    { url: "https://news.google.com/rss/search?q=UFC+fight+results+2026&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
+    { url: "https://news.google.com/rss/search?q=UFC+Jon+Jones+Islam+Makhachev+Dricus+du+Plessis&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
+    { url: "https://news.google.com/rss/search?q=UFC+next+event+card+fighter&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
     { url: "https://www.espn.com/espn/rss/mma/news", source: "ESPN" },
     { url: "https://www.mmafighting.com/rss/current", source: "MMA Fighting" },
     { url: "https://mmajunkie.usatoday.com/feed", source: "MMA Junkie" },
     { url: "https://www.reddit.com/r/ufc+MMA/.rss?limit=15", source: "Reddit" },
+  ],
+  colombia: [
+    { url: "https://news.google.com/rss/search?q=Colombia+noticias&hl=es-419&gl=CO&ceid=CO:es-419", source: "Google News" },
+    { url: "https://caracol.com.co/feed/", source: "Caracol" },
+    { url: "https://www.rcnradio.com/feed", source: "RCN Radio" },
+    { url: "https://www.eltiempo.com/rss/colombia.xml", source: "El Tiempo" },
+    { url: "https://www.semana.com/rss/", source: "Semana" },
+    { url: "https://www.elespectador.com/arc/outboundfeeds/rss/", source: "El Espectador" },
+  ],
+  nyt: [
+    { url: "https://news.google.com/rss/search?q=site:nytimes.com+world&hl=en-US&gl=US&ceid=US:en", source: "NY Times" },
+    { url: "https://news.google.com/rss/search?q=site:nytimes.com+politics+US&hl=en-US&gl=US&ceid=US:en", source: "NY Times" },
+    { url: "https://news.google.com/rss/search?q=site:nytimes.com+technology&hl=en-US&gl=US&ceid=US:en", source: "NY Times" },
+    { url: "https://news.google.com/rss/search?q=site:nytimes.com+business+economy&hl=en-US&gl=US&ceid=US:en", source: "NY Times" },
+    { url: "https://news.google.com/rss/search?q=site:nytimes.com+science+health&hl=en-US&gl=US&ceid=US:en", source: "NY Times" },
   ],
 };
 
@@ -168,7 +185,7 @@ export async function GET(request: Request) {
     feeds.map(async ({ url: feedUrl, source }) => {
       const res = await fetch(feedUrl, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; n2s-dashboard/1.0)" },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(6000),
       });
       if (!res.ok) throw new Error(`${res.status}`);
       return parseItems(await res.text(), source);
@@ -191,5 +208,7 @@ export async function GET(request: Request) {
       return db - da;
     });
 
-  return Response.json({ items });
+  return Response.json({ items }, {
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
+  });
 }

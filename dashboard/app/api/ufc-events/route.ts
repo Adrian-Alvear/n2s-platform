@@ -58,7 +58,9 @@ export async function GET() {
         };
       });
 
-    return Response.json({ events });
+    return Response.json({ events }, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
+    });
   } catch {
     return Response.json({ events: [] });
   }
