@@ -1,4 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getSoccerScores, type MatchEvent } from "../soccer-scores/route";
+import { getUpcomingUfc, type UFCEvent } from "../ufc-events/route";
 
 // @cloudflare/workers-types isn't installed, so type the AI binding locally.
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -81,6 +83,36 @@ async function searchNews(query: string): Promise<string> {
   }
 }
 
+// Authoritative sports data (ESPN) — far more reliable than scraping the web.
+function isSoccer(t: string): boolean {
+  return /\b(soccer|football|premier league|la ?liga|bundesliga|serie a|champions league|world cup|match(?:es)?|fixtures?|kickoff|scores?|results?|game)\b/i.test(t);
+}
+function isUfc(t: string): boolean {
+  return /\b(ufc|mma|fight(?:er|s)?|octagon|main event)\b/i.test(t);
+}
+
+function formatScores(events: MatchEvent[]): string {
+  return events
+    .slice(0, 25)
+    .map((e) => {
+      if (e.state === "in") return `• [${e.league}] ${e.home.name} ${e.home.score}-${e.away.score} ${e.away.name} (LIVE)`;
+      if (e.state === "post") return `• [${e.league}] ${e.home.name} ${e.home.score}-${e.away.score} ${e.away.name} (finished)`;
+      const t = new Date(e.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return `• [${e.league}] ${e.home.name} vs ${e.away.name} (kickoff ${t})`;
+    })
+    .join("\n");
+}
+
+function formatUfc(events: UFCEvent[]): string {
+  return events
+    .slice(0, 10)
+    .map((e) => {
+      const d = new Date(e.date).toLocaleDateString("en", { month: "short", day: "numeric" });
+      return `• ${e.shortName || e.name} — ${e.mainEvent || "card TBA"} (${d}${e.location ? ", " + e.location : ""})`;
+    })
+    .join("\n");
+}
+
 // Does this message need live/external info? (apostrophe- and plural-tolerant)
 function needsLiveInfo(text: string): boolean {
   const t = text.toLowerCase().replace(/['’]/g, ""); // today's -> todays
@@ -155,11 +187,20 @@ export async function POST(request: Request) {
         .trim();
       if (query.length < 3) query = lastUser;
 
-      const [web, news] = await Promise.all([webSearch(query), searchNews(query)]);
-
       const blocks: string[] = [];
-      if (web) blocks.push(`Web search results for "${query}":\n${web}`);
-      if (news) blocks.push(`News results for "${query}":\n${news}`);
+
+      if (isUfc(lastUser)) {
+        const events = await getUpcomingUfc();
+        if (events.length) blocks.push("UPCOMING UFC EVENTS (official ESPN data):\n" + formatUfc(events));
+      } else if (isSoccer(lastUser)) {
+        const [scores, news] = await Promise.all([getSoccerScores(), searchNews(query)]);
+        if (scores.length) blocks.push("TODAY'S SOCCER FIXTURES & SCORES (official ESPN data):\n" + formatScores(scores));
+        if (news) blocks.push(`Related news for "${query}":\n${news}`);
+      } else {
+        const [web, news] = await Promise.all([webSearch(query), searchNews(query)]);
+        if (web) blocks.push(`Web search results for "${query}":\n${web}`);
+        if (news) blocks.push(`News results for "${query}":\n${news}`);
+      }
 
       const research: ChatMessage = {
         role: "system",

@@ -54,7 +54,9 @@ function parseEvent(event: Record<string, unknown>, leagueName: string): MatchEv
   };
 }
 
-export async function GET() {
+// Shared — used by this route AND the chat assistant (direct call, no internal
+// HTTP fetch which Cloudflare Access would block).
+export async function getSoccerScores(): Promise<MatchEvent[]> {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const dateParam = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
@@ -73,7 +75,7 @@ export async function GET() {
     })
   );
 
-  const events = results
+  return results
     .filter((r): r is PromiseFulfilledResult<MatchEvent[]> => r.status === "fulfilled")
     .flatMap((r) => r.value)
     .sort((a, b) => {
@@ -83,8 +85,11 @@ export async function GET() {
       if (ao !== bo) return ao - bo;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
+}
 
-  return Response.json({ events, date: dateParam }, {
+export async function GET() {
+  const events = await getSoccerScores();
+  return Response.json({ events }, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
   });
 }

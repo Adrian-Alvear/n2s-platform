@@ -9,7 +9,9 @@ export type UFCEvent = {
   mainEvent: string;
 };
 
-export async function GET() {
+// Shared — used by this route AND the chat assistant (direct call, no internal
+// HTTP fetch which Cloudflare Access would block).
+export async function getUpcomingUfc(): Promise<UFCEvent[]> {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const start = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
@@ -23,7 +25,7 @@ export async function GET() {
       `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=${start}-${endStr}&limit=20`,
       { headers: { "User-Agent": "Mozilla/5.0 (compatible; n2s-dashboard/1.0)" } }
     );
-    if (!res.ok) return Response.json({ events: [] });
+    if (!res.ok) return [];
 
     const data = await res.json();
     const events: UFCEvent[] = ((data.events as Record<string, unknown>[]) ?? [])
@@ -58,10 +60,15 @@ export async function GET() {
         };
       });
 
-    return Response.json({ events }, {
-      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
-    });
+    return events;
   } catch {
-    return Response.json({ events: [] });
+    return [];
   }
+}
+
+export async function GET() {
+  const events = await getUpcomingUfc();
+  return Response.json({ events }, {
+    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
+  });
 }
