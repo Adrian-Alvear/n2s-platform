@@ -132,6 +132,15 @@ async function runTool(name: string, args: Record<string, unknown>): Promise<str
   return "Unknown tool.";
 }
 
+// Heuristic: does this message likely need a live web/news lookup?
+function mightNeedTools(text: string): boolean {
+  const t = text.toLowerCase();
+  if (/https?:\/\//.test(t)) return true;
+  return /\b(search|google|look up|lookup|latest|current|today|tonight|this week|recent|news|headline|weather|forecast|price|cost of|stock|score|who won|when is|what time|what happened|happening|right now|near me)\b/.test(
+    t
+  );
+}
+
 type Call = { name: string; args: Record<string, unknown> };
 
 // Small models sometimes write the tool call as text instead of emitting a real
@@ -231,8 +240,22 @@ export async function POST(request: Request) {
 
   const ai = env.AI;
 
+  // Only offer tools when the message actually looks like it needs live/external
+  // info. Otherwise the small model obsesses over tools even for "hi".
+  const lastUser = [...trimmed].reverse().find((m) => m.role === "user")?.content ?? "";
+
   try {
-    // Pass 1 — let the model decide whether to call a tool
+    // Plain conversation — no tools, stream directly (clean + fast)
+    if (!mightNeedTools(lastUser)) {
+      const stream = (await ai.run(model, {
+        messages: [...system, ...trimmed],
+        stream: true,
+        max_tokens: 1024,
+      })) as unknown as ReadableStream;
+      return new Response(stream, { headers: SSE_HEADERS });
+    }
+
+    // Pass 1 — offer tools and let the model decide
     const first = (await ai.run(model, {
       messages: [...system, ...trimmed],
       tools: TOOLS,

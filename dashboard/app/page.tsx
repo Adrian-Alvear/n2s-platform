@@ -10,7 +10,7 @@ import { DEFAULT_BUDGETS, INCOME, MEMBER_COLORS } from "@/lib/data";
 import { getCover, setCover } from "@/lib/cover-cache";
 import { DashboardChat } from "@/components/dashboard-chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, string> = {
   Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
@@ -83,6 +83,7 @@ export default function Home() {
   const [scores, setScores] = useState<MatchEvent[]>([]);
   const [heroIdx, setHeroIdx] = useState(0);
   const [selected, setSelected] = useState<NewsItem | null>(null);
+  const [newsDigest, setNewsDigest] = useState("");
 
   useEffect(() => {
     const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -92,6 +93,17 @@ export default function Home() {
       .order("expense_at", { ascending: false })
       .then(({ data }) => { setEntries(data ?? []); setLoadingBudget(false); });
   }, []);
+
+  // AI digest for the selected tab (edge-cached ~12h, cheap)
+  useEffect(() => {
+    let cancelled = false;
+    setNewsDigest("");
+    fetch(`/api/news-digest?category=${newsTab}`)
+      .then(r => r.json())
+      .then(({ summary }) => { if (!cancelled) setNewsDigest(summary ?? ""); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [newsTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,6 +207,17 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+
+          {/* AI digest for this tab */}
+          {newsDigest && (
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles size={13} className="text-blue-500" />
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Today&apos;s Digest</span>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground/90">{newsDigest}</p>
+            </div>
+          )}
 
           {loadingNews && (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
