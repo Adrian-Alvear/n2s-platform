@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/lib/user-context";
 import { buildChatContext } from "@/lib/chat-context";
+import { addUsage, getUsage, EST } from "@/lib/ai-usage";
 import { Send, Loader2, MessageSquare, Sparkles, AlertCircle } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -22,6 +23,7 @@ export default function Chat() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [model, setModelState] = useState<"fast" | "smart">("fast");
+  const [usagePct, setUsagePct] = useState(0);
   const contextRef = useRef("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -30,6 +32,7 @@ export default function Chat() {
   useEffect(() => {
     const saved = localStorage.getItem("n2s_chat_model");
     if (saved === "fast" || saved === "smart") setModelState(saved);
+    setUsagePct(getUsage().pct);
   }, []);
   function setModel(m: "fast" | "smart") {
     setModelState(m);
@@ -112,6 +115,9 @@ export default function Chat() {
       if (!assistant) {
         setMessages(next);
         setError("The assistant didn't return a response. Please try again.");
+      } else {
+        addUsage(model === "smart" ? EST.smart : EST.fast);
+        setUsagePct(getUsage().pct);
       }
     } catch {
       setMessages(next);
@@ -134,7 +140,9 @@ export default function Chat() {
           </div>
           <div className="min-w-0">
             <h1 className="font-semibold leading-tight">Assistant</h1>
-            <p className="text-xs text-muted-foreground truncate">Budget · News · Web search</p>
+            <p className="text-xs text-muted-foreground truncate" title="Estimated share of today's free Workers AI allowance used on this device. Exact usage is in your Cloudflare dashboard.">
+              Budget · News · Web · <span className={usagePct >= 90 ? "text-amber-600" : ""}>~{usagePct}% of today&apos;s free AI</span>
+            </p>
           </div>
         </div>
 

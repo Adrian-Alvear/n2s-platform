@@ -1,29 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-// @cloudflare/workers-types isn't installed, so we type the AI binding locally.
-
+// @cloudflare/workers-types isn't installed, so type the AI binding locally.
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-type ToolCall = { name?: string; arguments?: unknown; function?: { name?: string; arguments?: string } };
-interface AIResult {
-  response?: string;
-  tool_calls?: ToolCall[];
-}
 interface WorkersAI {
   run(
     model: string,
-    input: {
-      messages: ChatMessage[];
-      tools?: unknown[];
-      stream?: boolean;
-      max_tokens?: number;
-      temperature?: number;
-    }
-  ): Promise<AIResult | ReadableStream>;
+    input: { messages: ChatMessage[]; stream?: boolean; max_tokens?: number; temperature?: number }
+  ): Promise<ReadableStream>;
 }
 
-// Two options the user can toggle between (both $0 on the Workers free plan).
-// "fast" = 8B (more free usage/day), "smart" = 70B (deeper, uses more of the daily allowance).
+// Both $0 on the Workers free plan. fast = more usage/day, smart = deeper.
 const MODELS: Record<string, string> = {
   fast: "@cf/meta/llama-3.1-8b-instruct-fp8",
   smart: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
@@ -31,59 +17,24 @@ const MODELS: Record<string, string> = {
 const DEFAULT_MODEL: keyof typeof MODELS = "fast";
 
 const SYSTEM_PROMPT =
-  "You are a warm, helpful assistant inside the N2S family dashboard, an app the family uses " +
-  "for budgeting and news. Amounts are in US dollars. Keep answers concise and friendly.\n\n" +
-  "You can use tools (web_search, search_news) ONLY when the user clearly asks for current or " +
-  "external information you don't already have. For greetings, small talk, budget questions, or " +
-  "anything you can answer directly — just reply normally.\n\n" +
-  "CRITICAL: Never describe, mention, or narrate tools. Never output JSON, function names, or " +
-  "phrases like 'I can suggest a tool call'. Either call a tool silently, or just answer in plain " +
-  "conversational language. Never invent budget figures — only use numbers you were given.";
+  "You are a warm, helpful assistant inside the N2S family dashboard, an app the family uses for " +
+  "budgeting and news. Amounts are in US dollars. Keep answers concise and friendly.\n\n" +
+  "When you are given SEARCH RESULTS or dashboard DATA below, base your answer on them and mention " +
+  "the source briefly. Never invent budget figures — only use numbers you were given. " +
+  "Never output JSON and never mention 'tools' or 'function calls' — just answer naturally.";
 
-// ─── Tools ───────────────────────────────────────────────────────────────────
+// ─── Web / news lookups (free, no API key) ───────────────────────────────────
 
-const TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "web_search",
-      description: "Search the live web for current information, facts, prices, or anything not already provided.",
-      parameters: {
-        type: "object",
-        properties: { query: { type: "string", description: "The search query" } },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "search_news",
-      description: "Get the latest news headlines about a specific topic or keyword.",
-      parameters: {
-        type: "object",
-        properties: { topic: { type: "string", description: "The news topic or keyword" } },
-        required: ["topic"],
-      },
-    },
-  },
-];
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 function stripTags(s: string): string {
   return s
     .replace(/<[^>]*>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#\d+;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ").trim();
 }
-
-const UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 async function webSearch(query: string): Promise<string> {
   try {
@@ -92,104 +43,56 @@ async function webSearch(query: string): Promise<string> {
       signal: AbortSignal.timeout(8000),
     });
     const html = await res.text();
-    const results: string[] = [];
+    const out: string[] = [];
     const re = /class="result__a"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(html)) !== null && results.length < 5) {
+    while ((m = re.exec(html)) !== null && out.length < 5) {
       const title = stripTags(m[1]);
       const snippet = stripTags(m[2]);
-      if (title) results.push(`• ${title}\n  ${snippet}`);
+      if (title) out.push(`• ${title} — ${snippet}`);
     }
-    return results.length ? results.join("\n") : "No results found.";
+    return out.join("\n");
   } catch {
-    return "Web search is unavailable right now.";
+    return "";
   }
 }
 
-async function searchNews(topic: string): Promise<string> {
+async function searchNews(query: string): Promise<string> {
   try {
     const res = await fetch(
-      `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-US&gl=US&ceid=US:en`,
+      `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
       { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(8000) }
     );
     const xml = await res.text();
-    const titles: string[] = [];
+    const out: string[] = [];
     const re = /<item>[\s\S]*?<title>([\s\S]*?)<\/title>/gi;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(xml)) !== null && titles.length < 6) {
+    while ((m = re.exec(xml)) !== null && out.length < 6) {
       const t = stripTags(m[1]);
-      if (t) titles.push(`• ${t}`);
+      if (t) out.push(`• ${t}`);
     }
-    return titles.length ? titles.join("\n") : "No news found.";
+    return out.join("\n");
   } catch {
-    return "News search is unavailable right now.";
+    return "";
   }
 }
 
-async function runTool(name: string, args: Record<string, unknown>): Promise<string> {
-  if (name === "web_search") return webSearch(String(args.query ?? args.q ?? ""));
-  if (name === "search_news") return searchNews(String(args.topic ?? args.query ?? ""));
-  return "Unknown tool.";
-}
-
-// Heuristic: does this message likely need a live web/news lookup?
-function mightNeedTools(text: string): boolean {
+// Does this message need live/external info?
+function needsLiveInfo(text: string): boolean {
   const t = text.toLowerCase();
   if (/https?:\/\//.test(t)) return true;
-  return /\b(search|google|look up|lookup|latest|current|today|tonight|this week|recent|news|headline|weather|forecast|price|cost of|stock|score|who won|when is|what time|what happened|happening|right now|near me)\b/.test(
+  return /\b(search|google|look up|lookup|latest|current|today|tonight|this week|recent|news|headline|weather|forecast|price|cost of|stock|score|who won|when is|what time|what happened|happening|right now|near me|update on)\b/.test(
     t
   );
 }
 
-type Call = { name: string; args: Record<string, unknown> };
-
-// Small models sometimes write the tool call as text instead of emitting a real
-// one. Catch that: pull any {"name":"web_search",...} block out of the response.
-function extractToolCallsFromText(text: string): Call[] {
-  if (!text) return [];
-  const out: Call[] = [];
-  const re = /\{(?:[^{}]|\{[^{}]*\})*"name"\s*:\s*"(web_search|search_news)"(?:[^{}]|\{[^{}]*\})*\}/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    try {
-      const obj = JSON.parse(m[0]) as { name?: string; parameters?: unknown; arguments?: unknown };
-      const p = (obj.parameters ?? obj.arguments ?? {}) as Record<string, unknown>;
-      if (obj.name) out.push({ name: obj.name, args: typeof p === "object" && p ? p : {} });
-    } catch {
-      /* not valid JSON — skip */
-    }
-  }
-  return out;
-}
-
-// Strip any leaked tool JSON / meta-narration from a plain answer.
-function cleanAnswer(text: string): string {
-  return text
-    .replace(/\{(?:[^{}]|\{[^{}]*\})*"name"\s*:\s*"(?:web_search|search_news)"(?:[^{}]|\{[^{}]*\})*\}/gi, "")
-    .replace(/I don't see a function call[^.]*\.|However, I can suggest[^.]*\.|I can suggest a tool call[^.]*\./gi, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-// ─── SSE helpers ─────────────────────────────────────────────────────────────
+// ─── SSE ─────────────────────────────────────────────────────────────────────
 
 const SSE_HEADERS = {
   "Content-Type": "text/event-stream",
   "Cache-Control": "no-cache",
   Connection: "keep-alive",
 };
-
-// Wrap a plain string into the same SSE shape the client already parses.
-function sseFromText(text: string): ReadableStream {
-  const enc = new TextEncoder();
-  return new ReadableStream({
-    start(controller) {
-      controller.enqueue(enc.encode(`data: ${JSON.stringify({ response: text })}\n\n`));
-      controller.enqueue(enc.encode("data: [DONE]\n\n"));
-      controller.close();
-    },
-  });
-}
 
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
@@ -206,7 +109,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid request body." }, { status: 400 });
   }
   const model = MODELS[modelKey];
-
   const trimmed = messages.slice(-10);
 
   const system: ChatMessage[] = [{ role: "system", content: SYSTEM_PROMPT }];
@@ -214,7 +116,7 @@ export async function POST(request: Request) {
     system.push({
       role: "system",
       content:
-        "Here is the family's current dashboard data. Use it for budget/news questions. " +
+        "Here is the family's current dashboard DATA. Use it for budget/news questions. " +
         "Only use these numbers — do not invent figures.\n\n" +
         context,
     });
@@ -226,92 +128,53 @@ export async function POST(request: Request) {
   } catch {
     env = {};
   }
-
   if (!env.AI) {
     return Response.json(
-      {
-        error:
-          "Chat isn't available in local `next dev` without Cloudflare access. " +
-          "Log in with `wrangler login`, or run `npm run preview` / deploy.",
-      },
+      { error: "Chat isn't available here without Cloudflare access. Run `npm run preview` or deploy." },
       { status: 503 }
     );
   }
-
   const ai = env.AI;
-
-  // Only offer tools when the message actually looks like it needs live/external
-  // info. Otherwise the small model obsesses over tools even for "hi".
   const lastUser = [...trimmed].reverse().find((m) => m.role === "user")?.content ?? "";
 
   try {
-    // Plain conversation — no tools, stream directly (clean + fast)
-    if (!mightNeedTools(lastUser)) {
-      const stream = (await ai.run(model, {
-        messages: [...system, ...trimmed],
-        stream: true,
-        max_tokens: 1024,
-      })) as unknown as ReadableStream;
-      return new Response(stream, { headers: SSE_HEADERS });
-    }
+    // If the message needs live info, fetch it ourselves and hand it to the model
+    if (needsLiveInfo(lastUser)) {
+      const query = lastUser.replace(/^\s*(search( the web)?|google|look ?up)\s*:?\s*/i, "").trim() || lastUser;
+      const wantsNews = /\b(news|headline|latest)\b/i.test(lastUser);
+      const [web, news] = await Promise.all([
+        webSearch(query),
+        wantsNews ? searchNews(query) : Promise.resolve(""),
+      ]);
 
-    // Pass 1 — offer tools and let the model decide
-    const first = (await ai.run(model, {
-      messages: [...system, ...trimmed],
-      tools: TOOLS,
-      max_tokens: 1024,
-    })) as AIResult;
+      const blocks: string[] = [];
+      if (web) blocks.push(`Web search results for "${query}":\n${web}`);
+      if (news) blocks.push(`News results for "${query}":\n${news}`);
 
-    // Collect tool calls — structured first, then any leaked into the text
-    let toolCalls: Call[] = (Array.isArray(first.tool_calls) ? first.tool_calls : [])
-      .map((c) => {
-        const name = c.name ?? c.function?.name ?? "";
-        let args: Record<string, unknown> = {};
-        const rawArgs = c.arguments ?? c.function?.arguments;
-        if (typeof rawArgs === "string") {
-          try {
-            args = JSON.parse(rawArgs);
-          } catch {
-            args = {};
-          }
-        } else if (rawArgs && typeof rawArgs === "object") {
-          args = rawArgs as Record<string, unknown>;
-        }
-        return { name, args };
-      })
-      .filter((c) => c.name);
-
-    if (toolCalls.length === 0) {
-      toolCalls = extractToolCallsFromText(first.response ?? "");
-    }
-
-    if (toolCalls.length > 0) {
-      const results: string[] = [];
-      for (const c of toolCalls.slice(0, 3)) {
-        results.push(`Result of ${c.name}(${JSON.stringify(c.args)}):\n${await runTool(c.name, c.args)}`);
-      }
-
-      // Pass 2 — stream the final answer using the tool results
-      const toolMsg: ChatMessage = {
+      const research: ChatMessage = {
         role: "system",
-        content:
-          "You looked up information to answer. Results:\n\n" +
-          results.join("\n\n") +
-          "\n\nNow answer the user's question in plain, friendly language using these results. " +
-          "Mention the source briefly. Do NOT output JSON or mention tools.",
+        content: blocks.length
+          ? "SEARCH RESULTS (live from the web):\n\n" +
+            blocks.join("\n\n") +
+            "\n\nAnswer the user's question using these results, in plain friendly language. Mention the source briefly."
+          : "You tried to search the web but found no useful results. Tell the user you couldn't find current information on that, briefly.",
       };
-      const stream = (await ai.run(model, {
-        messages: [...system, ...trimmed, toolMsg],
+
+      const stream = await ai.run(model, {
+        messages: [...system, research, ...trimmed],
         stream: true,
         max_tokens: 1024,
-      })) as unknown as ReadableStream;
-
+      });
       return new Response(stream, { headers: SSE_HEADERS });
     }
 
-    // No tool needed — clean any stray JSON/meta and return the answer
-    const answer = cleanAnswer(first.response ?? "");
-    return new Response(sseFromText(answer || "Hi! How can I help you today?"), { headers: SSE_HEADERS });
+    // Plain conversation — clean streaming, no tools
+    const stream = await ai.run(model, {
+      messages: [...system, ...trimmed],
+      stream: true,
+      max_tokens: 1024,
+    });
+    return new Response(stream, { headers: SSE_HEADERS });
   } catch (err) {
     console.error("Workers AI error:", err);
     return Response.json({ error: "The assistant is unavailable right now." }, { status: 502 });
