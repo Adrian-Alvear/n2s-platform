@@ -56,8 +56,9 @@ export default function BudgetOverview() {
       <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 text-white p-5 md:p-8 shadow-lg">
         <div className="flex items-start justify-between mb-5 md:mb-6 gap-4">
           <div>
-            <p className="text-violet-200 text-sm font-medium mb-1">Saldo disponible</p>
+            <p className="text-violet-200 text-sm font-medium mb-1">Ahorro del mes</p>
             <p className="text-4xl md:text-5xl font-bold tracking-tight">${saldo.toFixed(2)}</p>
+            <p className="text-violet-300/80 text-xs mt-1">Ingresos − Presupuesto</p>
           </div>
           <div className="bg-white/10 rounded-xl px-3 py-1.5 shrink-0">
             <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
