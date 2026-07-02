@@ -1,0 +1,85 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+// Fast/cheapest model — plenty for a short summary
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
+
+type NewsItem = { title: string; description?: string };
+interface AIResult {
+  response?: string;
+}
+interface WorkersAI {
+  run(
+    model: string,
+    input: { messages: { role: string; content: string }[]; max_tokens?: number; temperature?: number }
+  ): Promise<AIResult>;
+}
+
+const LABELS: Record<string, string> = {
+  ai: "AI & technology",
+  soccer: "soccer",
+  nba: "NBA",
+  ufc: "UFC / MMA",
+  colombia: "Colombia",
+  nyt: "world",
+};
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const category = url.searchParams.get("category") ?? "ai";
+  const label = LABELS[category] ?? "news";
+
+  // Reuse the existing news route (already cached) — forward the same params
+  let items: NewsItem[] = [];
+  try {
+    const newsUrl = new URL("/api/news", request.url);
+    newsUrl.search = url.searchParams.toString();
+    const res = await fetch(newsUrl.toString());
+    const data = (await res.json()) as { items?: NewsItem[] };
+    items = data.items ?? [];
+  } catch {
+    return Response.json({ summary: "" });
+  }
+
+  const top = items.slice(0, 10);
+  if (top.length === 0) return Response.json({ summary: "" });
+
+  // Reach the Workers AI binding
+  let env: { AI?: WorkersAI };
+  try {
+    ({ env } = getCloudflareContext() as unknown as { env: { AI?: WorkersAI } });
+  } catch {
+    env = {};
+  }
+  if (!env.AI) return Response.json({ summary: "" });
+
+  const list = top
+    .map((it, i) => `${i + 1}. ${it.title}${it.description ? ` — ${it.description}` : ""}`)
+    .join("\n");
+
+  try {
+    const result = await env.AI.run(MODEL, {
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a concise news editor. Write a short daily digest that synthesizes the main " +
+            "themes across the headlines — do not list them one by one. 3 to 4 short sentences, " +
+            "plain and factual, no preamble.",
+        },
+        {
+          role: "user",
+          content: `Summarize today's top ${label} news for a busy reader:\n\n${list}`,
+        },
+      ],
+      max_tokens: 220,
+    });
+
+    const summary = (result.response ?? "").trim();
+    return Response.json(
+      { summary },
+      { headers: { "Cache-Control": "public, s-maxage=43200, stale-while-revalidate=86400" } }
+    );
+  } catch {
+    return Response.json({ summary: "" });
+  }
+}

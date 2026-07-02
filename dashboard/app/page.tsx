@@ -7,8 +7,10 @@ import Link from "next/link";
 import { useUser } from "@/lib/user-context";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_BUDGETS, INCOME, MEMBER_COLORS } from "@/lib/data";
+import { getCover, setCover } from "@/lib/cover-cache";
+import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles, Send } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, string> = {
   Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
@@ -72,7 +74,9 @@ function SectionHeader({ title, href, label }: { title: string; href: string; la
 
 export default function Home() {
   const { user } = useUser();
+  const router = useRouter();
   const now = new Date();
+  const [askInput, setAskInput] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loadingBudget, setLoadingBudget] = useState(true);
   const [newsTab, setNewsTab] = useState("ai");
@@ -100,16 +104,20 @@ export default function Home() {
       .then(r => r.json())
       .then(({ items }) => {
         if (cancelled) return;
-        const list: NewsItem[] = (items ?? []).slice(0, 10);
+        // Hydrate each item's real cover from cache so reloads paint instantly
+        const list: NewsItem[] = (items ?? [])
+          .slice(0, 10)
+          .map((it: NewsItem) => (it.image ? it : { ...it, image: getCover(it.link) }));
         setNews(list);
         setLoadingNews(false);
-        // Backfill og:images for the first items missing one (so AI etc. get heroes)
+        // Discover the real og:image only for items still missing one, then cache it
         list.slice(0, 6).forEach((item, i) => {
           if (item.image || !item.link) return;
           fetch(`/api/og-image?url=${encodeURIComponent(item.link)}`)
             .then(r => r.json())
             .then(({ image }) => {
               if (cancelled || !image) return;
+              setCover(item.link, image);
               setNews(prev => prev.map((p, idx) => idx === i ? { ...p, image } : p));
             })
             .catch(() => {});
@@ -135,6 +143,16 @@ export default function Home() {
     return () => clearInterval(t);
   }, [heroItems.length]);
 
+  // Preload the next slide's real image so switching is instant
+  useEffect(() => {
+    if (heroItems.length < 2) return;
+    const nextUrl = heroItems[(heroIdx + 1) % heroItems.length]?.image;
+    if (nextUrl) {
+      const img = new window.Image();
+      img.src = nextUrl;
+    }
+  }, [heroIdx, heroItems]);
+
   const totalSpent = entries.reduce((s, e) => s + e.amount, 0);
   const remaining = totalBudget - totalSpent;
   const budgetPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
@@ -150,6 +168,27 @@ export default function Home() {
           {greeting()}{user ? `, ${user.name}` : ""}
         </h1>
       </div>
+
+      {/* Ask the assistant */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = askInput.trim();
+          if (q) router.push(`/chat?q=${encodeURIComponent(q)}`);
+        }}
+        className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 focus-within:border-blue-400 transition-colors"
+      >
+        <Sparkles size={17} className="text-blue-600 shrink-0" />
+        <input
+          value={askInput}
+          onChange={(e) => setAskInput(e.target.value)}
+          placeholder="Ask the assistant about your budget, news…"
+          className="flex-1 bg-transparent outline-none text-sm py-1"
+        />
+        <Button type="submit" size="icon" disabled={!askInput.trim()} className="rounded-xl bg-blue-600 hover:bg-blue-700 shrink-0 h-8 w-8">
+          <Send size={15} />
+        </Button>
+      </form>
 
       {/* ── Top: News hero + sidebar ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -192,7 +231,7 @@ export default function Home() {
                 {hero && (
                   <div className="group relative rounded-2xl overflow-hidden h-52 md:h-64 shadow-sm">
                     <button onClick={() => setSelected(hero)} className="block w-full h-full text-left">
-                      <img src={hero.image} alt={hero.title} className="w-full h-full object-cover transition-opacity duration-500" />
+                      <img src={hero.image} alt={hero.title} loading="eager" fetchPriority="high" decoding="async" className="w-full h-full object-cover transition-opacity duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${tabBadge}`}>{hero.source}</span>

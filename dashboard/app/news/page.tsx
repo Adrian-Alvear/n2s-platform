@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Loader2, ExternalLink, X, Clock, Calendar, Plus, Rss, Search, Copy, Check, Settings2 } from "lucide-react";
+import { Loader2, ExternalLink, X, Clock, Calendar, Plus, Rss, Search, Copy, Check, Settings2, Compass, Lock, Sparkles } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getCover, setCover } from "@/lib/cover-cache";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,31 @@ const BASE_CATEGORIES = [
 ];
 
 const CUSTOM_COLOR = { active: "bg-sky-600", badge: "bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300", dot: "bg-sky-500" };
+
+// ─── Discover: pick a source platform to follow ──────────────────────────────
+// Only platforms with free, reliable public feeds are enabled. X/Facebook/
+// Instagram require paid APIs (no free RSS), so they're shown but disabled.
+type Platform = {
+  key: string; label: string; emoji: string; desc: string;
+  available: boolean; needsTopic?: boolean;
+  build?: (topic: string) => { type: "topic" | "url"; value: string };
+  tag: string;
+};
+
+const PLATFORMS: Platform[] = [
+  { key: "google", label: "Google News", emoji: "📰", desc: "Search across thousands of outlets", available: true, needsTopic: true, tag: "News",
+    build: (q) => ({ type: "topic", value: q }) },
+  { key: "reddit", label: "Reddit", emoji: "👽", desc: "Community discussions & links", available: true, needsTopic: true, tag: "Reddit",
+    build: (q) => ({ type: "url", value: `https://www.reddit.com/search.rss?q=${encodeURIComponent(q)}&sort=relevance` }) },
+  { key: "hn", label: "Hacker News", emoji: "💻", desc: "Tech & startup stories", available: true, needsTopic: true, tag: "HN",
+    build: (q) => ({ type: "url", value: `https://hnrss.org/newest?q=${encodeURIComponent(q)}` }) },
+  { key: "trends", label: "Google Trends", emoji: "📈", desc: "What's trending right now", available: true, needsTopic: false, tag: "Trends",
+    build: () => ({ type: "url", value: "https://trends.google.com/trending/rss?geo=US" }) },
+  { key: "youtube", label: "YouTube", emoji: "▶️", desc: "Requires channel API — coming soon", available: false, tag: "YT" },
+  { key: "x", label: "X / Twitter", emoji: "𝕏", desc: "No free API — paid only", available: false, tag: "X" },
+  { key: "facebook", label: "Facebook", emoji: "📘", desc: "No public feed access", available: false, tag: "FB" },
+  { key: "instagram", label: "Instagram", emoji: "📸", desc: "No public feed access", available: false, tag: "IG" },
+];
 
 const FALLBACKS: Record<string, string[]> = {
   ai:       ["https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80","https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80","https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80"],
@@ -71,7 +97,8 @@ function ArticleImg({ rssImage, link, fallback, alt, className }: {
   const fetched = useRef(false);
 
   useEffect(() => {
-    setSrc(rssImage || "");
+    // Prefer the RSS image, else a previously-resolved real cover from cache
+    setSrc(rssImage || getCover(link) || "");
     setErr(false);
     fetched.current = false;
   }, [rssImage, link]);
@@ -82,7 +109,7 @@ function ArticleImg({ rssImage, link, fallback, alt, className }: {
     fetched.current = true;
     fetch(`/api/og-image?url=${encodeURIComponent(link)}`)
       .then((r) => r.json())
-      .then(({ image }) => { if (image) { setSrc(image); setErr(false); } })
+      .then(({ image }) => { if (image) { setCover(link, image); setSrc(image); setErr(false); } })
       .catch(() => {});
   }
 
@@ -423,6 +450,8 @@ export default function News() {
   const [category, setCategory] = useState("ai");
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [digest, setDigest] = useState("");
+  const [digestLoading, setDigestLoading] = useState(false);
   const [scores, setScores] = useState<MatchEvent[]>([]);
   const [ufcEvents, setUfcEvents] = useState<UFCEvent[]>([]);
   const [selected, setSelected] = useState<NewsItem | null>(null);
@@ -432,6 +461,8 @@ export default function News() {
   const [addOpen, setAddOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [discoverPlatform, setDiscoverPlatform] = useState<Platform | null>(null);
+  const [discoverTopic, setDiscoverTopic] = useState("");
 
   useEffect(() => {
     setCustomFeeds(loadCustomFeeds());
@@ -463,6 +494,9 @@ export default function News() {
   }, [category]);
 
   useEffect(() => {
+    // Discover is a source picker, not a feed — skip fetching
+    if (category === "discover") { setLoading(false); setItems([]); return; }
+
     setLoading(true);
     setItems([]);
 
@@ -478,6 +512,27 @@ export default function News() {
       .then(r => r.json())
       .then(({ items }) => { setItems(items ?? []); setLoading(false); })
       .catch(() => setLoading(false));
+  }, [category, customFeeds]);
+
+  // AI daily digest — cached ~12h server-side, so this is cheap
+  useEffect(() => {
+    if (category === "discover") { setDigest(""); return; }
+    setDigest("");
+    setDigestLoading(true);
+
+    const custom = customFeeds.find(f => f.id === category);
+    let url = `/api/news-digest?category=${category}`;
+    if (custom) {
+      url = custom.type === "topic"
+        ? `/api/news-digest?category=custom&topic=${encodeURIComponent(custom.value)}`
+        : `/api/news-digest?category=custom&url=${encodeURIComponent(custom.value)}`;
+    }
+
+    fetch(url)
+      .then(r => r.json())
+      .then(({ summary }) => setDigest(summary ?? ""))
+      .catch(() => {})
+      .finally(() => setDigestLoading(false));
   }, [category, customFeeds]);
 
   function addFeed(feed: CustomFeed) {
@@ -501,6 +556,25 @@ export default function News() {
     setHiddenTabs(updated);
     saveHiddenTabs(updated);
     if (updated.includes(category)) setCategory(BASE_CATEGORIES.find(c => !updated.includes(c.key))?.key ?? "ai");
+  }
+
+  function pickPlatform(p: Platform) {
+    if (!p.available) return;
+    if (p.needsTopic) { setDiscoverPlatform(p); setDiscoverTopic(""); return; }
+    // No topic needed (e.g. Trends) — create the feed right away
+    const built = p.build!("");
+    addFeed({ id: `disc-${p.key}-${Date.now()}`, label: p.tag, type: built.type, value: built.value });
+  }
+
+  function confirmDiscover() {
+    const p = discoverPlatform;
+    const topic = discoverTopic.trim();
+    if (!p || !topic) return;
+    const built = p.build!(topic);
+    const label = `${p.tag} · ${topic}`.slice(0, 28);
+    addFeed({ id: `disc-${p.key}-${Date.now()}`, label, type: built.type, value: built.value });
+    setDiscoverPlatform(null);
+    setDiscoverTopic("");
   }
 
   function openArticle(item: NewsItem) { setSelected(item); setReaderOpen(true); }
@@ -534,6 +608,14 @@ export default function News() {
             </button>
           ))}
         </div>
+
+        {/* Discover tab */}
+        <button
+          onClick={() => setCategory("discover")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${category === "discover" ? "bg-indigo-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+        >
+          <Compass size={14} /> Discover
+        </button>
 
         {/* Custom feed tabs */}
         {mounted && customFeeds.map((f) => (
@@ -618,6 +700,63 @@ export default function News() {
         </div>
       )}
 
+      {/* Discover — source picker */}
+      {category === "discover" && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold">Discover sources</h2>
+            <p className="text-sm text-muted-foreground">Pick a platform and topic to follow. It becomes a saved tab you can revisit anytime.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => pickPlatform(p)}
+                disabled={!p.available}
+                className={`relative text-left rounded-xl border p-4 transition-all ${
+                  p.available
+                    ? "bg-card hover:border-indigo-400 hover:shadow-sm cursor-pointer"
+                    : "bg-muted/40 opacity-60 cursor-not-allowed"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">{p.emoji}</span>
+                  {!p.available && <Lock size={13} className="text-muted-foreground" />}
+                </div>
+                <p className="font-semibold text-sm">{p.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{p.desc}</p>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            X, Facebook & Instagram don't offer free public feeds, so they require paid APIs — added later if needed.
+          </p>
+        </div>
+      )}
+
+      {/* Discover — topic entry dialog */}
+      <Dialog open={!!discoverPlatform} onOpenChange={(o) => { if (!o) setDiscoverPlatform(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">{discoverPlatform?.emoji}</span> Follow on {discoverPlatform?.label}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <Input
+              autoFocus
+              placeholder="Topic or keyword (e.g. Claude AI)"
+              value={discoverTopic}
+              onChange={(e) => setDiscoverTopic(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") confirmDiscover(); }}
+            />
+            <Button onClick={confirmDiscover} disabled={!discoverTopic.trim()} className="w-full gap-2">
+              <Plus size={14} /> Add feed
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {loading && (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
           <Loader2 className="animate-spin mr-2" size={16} /> Loading...
@@ -626,6 +765,26 @@ export default function News() {
 
       {!loading && items.length > 0 && (
         <div className="space-y-5">
+
+          {/* AI daily digest */}
+          {(digest || digestLoading) && (
+            <div className="rounded-xl border bg-card overflow-hidden">
+              <div className="px-4 py-2.5 border-b flex items-center gap-2">
+                <Sparkles size={13} className="text-blue-500" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Today&apos;s Digest</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">AI summary</span>
+              </div>
+              <div className="px-4 py-3">
+                {digestLoading && !digest ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 size={14} className="animate-spin" /> Summarizing today&apos;s news…
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed text-foreground/90">{digest}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Headlines */}
           <div className="rounded-xl border bg-card overflow-hidden">

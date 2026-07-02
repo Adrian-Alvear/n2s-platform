@@ -23,5 +23,11 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
+	},
+	"ai": {
+		// Workers AI — powers the Chat module (free daily allowance, no API key).
+		// remote:true lets the binding reach Cloudflare's AI during local dev too.
+		"binding": "AI",
+		"remote": true
 	}
 }

@@ -10,3 +10,9 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Makes Cloudflare bindings (env.AI, etc.) reachable via getCloudflareContext()
+// during `next dev`. Note: Workers AI has no local emulator — use
+// `npm run preview` or deploy to actually run the chat.
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();
