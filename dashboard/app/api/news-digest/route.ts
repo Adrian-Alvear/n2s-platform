@@ -59,9 +59,9 @@ export async function GET(request: Request) {
         {
           role: "system",
           content:
-            "You are a concise news editor. Write a short daily digest that synthesizes the main " +
-            "themes across the headlines — do not list them one by one. 3 to 4 short sentences, " +
-            "plain and factual, no preamble.",
+            "You are a concise news editor. Summarize the day's news as 3 to 4 short bullet points. " +
+            "Each bullet is ONE short, plain sentence capturing a key theme or story — group related " +
+            "headlines together. Start every bullet with '- '. No title, no intro, no closing line.",
         },
         {
           role: "user",

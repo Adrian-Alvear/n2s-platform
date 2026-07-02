@@ -8,6 +8,7 @@ import { useUser } from "@/lib/user-context";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_BUDGETS, INCOME, MEMBER_COLORS } from "@/lib/data";
 import { getCover, setCover } from "@/lib/cover-cache";
+import { parseDigest } from "@/lib/digest";
 import { DashboardChat } from "@/components/dashboard-chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
@@ -211,11 +212,18 @@ export default function Home() {
           {/* AI digest for this tab */}
           {newsDigest && (
             <div className="rounded-xl border border-border bg-card px-4 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles size={13} className="text-blue-500" />
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Today&apos;s Digest</span>
               </div>
-              <p className="text-sm leading-relaxed text-foreground/90">{newsDigest}</p>
+              <ul className="space-y-1.5">
+                {parseDigest(newsDigest).map((line, i) => (
+                  <li key={i} className="flex gap-2 text-sm leading-relaxed text-foreground/90">
+                    <span className="mt-1.5 shrink-0 w-1 h-1 rounded-full bg-blue-500" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

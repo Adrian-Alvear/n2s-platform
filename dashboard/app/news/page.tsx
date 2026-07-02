@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCover, setCover } from "@/lib/cover-cache";
+import { readNewsCache, writeNewsCache } from "@/lib/news-cache";
+import { parseDigest } from "@/lib/digest";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -497,10 +499,19 @@ export default function News() {
     // Discover is a source picker, not a feed — skip fetching
     if (category === "discover") { setLoading(false); setItems([]); return; }
 
-    setLoading(true);
-    setItems([]);
-
     const custom = customFeeds.find(f => f.id === category);
+    const cacheKey = custom ? `${custom.type}:${custom.value}` : category;
+
+    // Show cached items instantly (no spinner), then revalidate in background
+    const cached = readNewsCache(cacheKey) as NewsItem[] | null;
+    if (cached && cached.length) {
+      setItems(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setItems([]);
+    }
+
     let url = `/api/news?category=${category}`;
     if (custom) {
       url = custom.type === "topic"
@@ -510,7 +521,11 @@ export default function News() {
 
     fetch(url)
       .then(r => r.json())
-      .then(({ items }) => { setItems(items ?? []); setLoading(false); })
+      .then(({ items }) => {
+        setItems(items ?? []);
+        setLoading(false);
+        if (items?.length) writeNewsCache(cacheKey, items);
+      })
       .catch(() => setLoading(false));
   }, [category, customFeeds]);
 
@@ -780,7 +795,14 @@ export default function News() {
                     <Loader2 size={14} className="animate-spin" /> Summarizing today&apos;s news…
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed text-foreground/90">{digest}</p>
+                  <ul className="space-y-1.5">
+                    {parseDigest(digest).map((line, i) => (
+                      <li key={i} className="flex gap-2 text-sm leading-relaxed text-foreground/90">
+                        <span className="text-blue-500 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-blue-500" />
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
