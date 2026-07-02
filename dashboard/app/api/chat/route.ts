@@ -20,7 +20,11 @@ const SYSTEM_PROMPT =
   "You are a warm, helpful assistant inside the N2S family dashboard, an app the family uses for " +
   "budgeting and news. Amounts are in US dollars. Keep answers concise and friendly.\n\n" +
   "When you are given SEARCH RESULTS or dashboard DATA below, base your answer on them and mention " +
-  "the source briefly. Never invent budget figures — only use numbers you were given. " +
+  "the source briefly. Only cite a source that actually appears in the results or data provided.\n\n" +
+  "CRITICAL — do not hallucinate: If you were NOT given results or data that answer the question, " +
+  "and it needs real-world or current information you don't reliably know (sports scores, prices, " +
+  "today's events, specific facts), plainly say you don't have that information. NEVER invent facts, " +
+  "scores, numbers, sources, or claim you searched when you didn't. " +
   "Never output JSON and never mention 'tools' or 'function calls' — just answer naturally.";
 
 // ─── Web / news lookups (free, no API key) ───────────────────────────────────
@@ -77,11 +81,14 @@ async function searchNews(query: string): Promise<string> {
   }
 }
 
-// Does this message need live/external info?
+// Does this message need live/external info? (apostrophe- and plural-tolerant)
 function needsLiveInfo(text: string): boolean {
-  const t = text.toLowerCase();
+  const t = text.toLowerCase().replace(/['’]/g, ""); // today's -> todays
   if (/https?:\/\//.test(t)) return true;
-  return /\b(search|google|look up|lookup|latest|current|today|tonight|this week|recent|news|headline|weather|forecast|price|cost of|stock|score|who won|when is|what time|what happened|happening|right now|near me|update on)\b/.test(
+  // multi-word cues
+  if (/(who won|who is winning|when is|when did|what time|what happened|whats happening|look ?up|right now|near me|this week|world cup|super bowl)/.test(t)) return true;
+  // single keywords (plural-tolerant)
+  return /\b(search|google|browse|latest|current|todays?|tonight|tomorrow|yesterday|recent|news|headlines?|weather|forecast|temperatures?|prices?|stocks?|scores?|results?|games?|match(?:es)?|standings?|fixtures?|tournament|soccer|football|basketball|nba|ufc|mma|championship)\b/.test(
     t
   );
 }
@@ -140,12 +147,15 @@ export async function POST(request: Request) {
   try {
     // If the message needs live info, fetch it ourselves and hand it to the model
     if (needsLiveInfo(lastUser)) {
-      const query = lastUser.replace(/^\s*(search( the web)?|google|look ?up)\s*:?\s*/i, "").trim() || lastUser;
-      const wantsNews = /\b(news|headline|latest)\b/i.test(lastUser);
-      const [web, news] = await Promise.all([
-        webSearch(query),
-        wantsNews ? searchNews(query) : Promise.resolve(""),
-      ]);
+      // Strip conversational filler so the search query is clean
+      let query = lastUser
+        .replace(/^\s*(search( the web)?|google|look ?up)\s*:?\s*/i, "")
+        .replace(/^\s*(do you (know|now)|can you (tell me|find|search)|please|tell me|what(?:'s| is| are)|whats|whos|who is)\s+/i, "")
+        .replace(/\?+\s*$/, "")
+        .trim();
+      if (query.length < 3) query = lastUser;
+
+      const [web, news] = await Promise.all([webSearch(query), searchNews(query)]);
 
       const blocks: string[] = [];
       if (web) blocks.push(`Web search results for "${query}":\n${web}`);
