@@ -8,15 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/user-context";
+import { useBudgetScope } from "@/lib/budget-scope";
 import { Plus, Check, Loader2 } from "lucide-react";
 
 export function QuickAddFloat() {
+  const { user } = useUser();
+  const { scope } = useBudgetScope();
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<Category | "">("");
   const [member, setMember] = useState<Member | "">("");
   const [saved, setSaved] = useState(false);
+
+  const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
+  const activeScope = canPersonal ? scope : "family";
 
   async function handleAdd() {
     if (!description || !amount || !category || !member) return;
@@ -27,6 +34,7 @@ export function QuickAddFloat() {
       category,
       amount: parseFloat(amount),
       member,
+      scope: activeScope,
     });
     setTimeout(() => {
       setSaved(false);
@@ -48,7 +56,14 @@ export function QuickAddFloat() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Agregar gasto</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Agregar gasto
+            {canPersonal && (
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${activeScope === "personal" ? "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" : "bg-muted text-muted-foreground"}`}>
+                {activeScope === "personal" ? "Personal" : "Familiar"}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-1">
           <div className="space-y-1.5">

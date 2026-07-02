@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Sidebar } from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { UserProvider } from "@/lib/user-context";
+import { BudgetScopeProvider } from "@/lib/budget-scope";
 import { QuickAddFloat } from "@/components/quick-add-float";
 import { MobileNav } from "@/components/mobile-nav";
 import "./globals.css";
@@ -21,13 +22,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex">
         <ThemeProvider>
           <UserProvider>
-            <Sidebar />
-            <div className="flex-1 flex flex-col overflow-auto relative">
-              <div className="h-12 md:hidden shrink-0" />
-              <main className="flex-1 pb-20 md:pb-0">{children}</main>
-              <QuickAddFloat />
-            </div>
-            <MobileNav />
+            <BudgetScopeProvider>
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-auto relative">
+                <div className="h-12 md:hidden shrink-0" />
+                <main className="flex-1 pb-20 md:pb-0">{children}</main>
+                <QuickAddFloat />
+              </div>
+              <MobileNav />
+            </BudgetScopeProvider>
           </UserProvider>
         </ThemeProvider>
       </body>

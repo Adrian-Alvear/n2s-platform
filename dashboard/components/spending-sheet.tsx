@@ -74,7 +74,7 @@ function EntryForm({ initial, onSave, onCancel, saving }: {
   );
 }
 
-export function SpendingSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: boolean; onOpenChange: (v: boolean) => void; scope?: "family" | "personal" }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -91,18 +91,19 @@ export function SpendingSheet({ open, onOpenChange }: { open: boolean; onOpenCha
     const from = new Date(year, month, 1).toISOString();
     const to = new Date(year, month + 1, 1).toISOString();
     const { data } = await supabase.from("entries").select("*")
+      .eq("scope", scope)
       .gte("expense_at", from).lt("expense_at", to)
       .order("expense_at", { ascending: false });
     setEntries(data ?? []);
     setLoading(false);
-  }, [year, month]);
+  }, [year, month, scope]);
 
   useEffect(() => { if (open) fetchEntries(); }, [open, fetchEntries]);
 
   async function addEntry({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!description || !amount || !category || !member) return;
     setSaving(true);
-    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member });
+    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope });
     await fetchEntries();
     setSaving(false);
     setAddOpen(false);

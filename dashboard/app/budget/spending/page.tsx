@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/user-context";
+import { useBudgetScope } from "@/lib/budget-scope";
 import { MonthNav } from "@/components/month-nav";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
@@ -77,6 +79,8 @@ function EntryForm({ initial, onSave, onCancel, saving }: {
 
 export default function Spending() {
   const now = new Date();
+  const { user } = useUser();
+  const { scope } = useBudgetScope();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -87,13 +91,17 @@ export default function Spending() {
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { fetchEntries(); }, [year, month]);
+  const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
+  const activeScope = canPersonal ? scope : "family";
+
+  useEffect(() => { fetchEntries(); }, [year, month, activeScope]);
 
   async function fetchEntries() {
     setLoading(true);
     const from = new Date(year, month, 1).toISOString();
     const to = new Date(year, month + 1, 1).toISOString();
     const { data } = await supabase.from("entries").select("*")
+      .eq("scope", activeScope)
       .gte("expense_at", from).lt("expense_at", to)
       .order("expense_at", { ascending: false });
     setEntries(data ?? []);
@@ -103,7 +111,7 @@ export default function Spending() {
   async function addEntry({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!description || !amount || !category || !member) return;
     setSaving(true);
-    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member });
+    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope: activeScope });
     await fetchEntries();
     setSaving(false);
     setAddOpen(false);

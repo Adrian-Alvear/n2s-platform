@@ -48,6 +48,21 @@ export const INCOME: Record<string, number> = {
   Adrian: 3000,
 };
 
+// ── Adrian's personal budget (separate from the family budget) ──────────────
+// Placeholder values — adjust these to Adrian's real personal income/budgets.
+export const PERSONAL_INCOME: Record<string, number> = { Adrian: 3000 };
+export const PERSONAL_BUDGETS = Object.fromEntries(
+  CATEGORIES.map((c) => [c, 0])
+) as Record<Category, number>;
+
+// Adrian's account balances — replace with the real numbers you have.
+// `credit` is the balance owed on the credit card.
+export const PERSONAL_ACCOUNTS = {
+  checking: 0,
+  savings: 0,
+  credit: 0,
+};
+
 export type Entry = {
   id: number;
   date: string;

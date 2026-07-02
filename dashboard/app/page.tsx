@@ -5,13 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useUser } from "@/lib/user-context";
+import { useBudgetScope } from "@/lib/budget-scope";
 import { supabase } from "@/lib/supabase";
-import { DEFAULT_BUDGETS, INCOME, MEMBER_COLORS } from "@/lib/data";
+import { DEFAULT_BUDGETS, INCOME, PERSONAL_INCOME, MEMBER_COLORS } from "@/lib/data";
+import { getPayments, paymentsTotal } from "@/lib/personal-payments-store";
 import { getCover, setCover } from "@/lib/cover-cache";
 import { parseDigest } from "@/lib/digest";
 import { DashboardChat } from "@/components/dashboard-chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles, Users, User } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, string> = {
   Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
@@ -19,8 +21,9 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
 };
 
-const totalBudget = Object.values(DEFAULT_BUDGETS).reduce((s, v) => s + v, 0);
-const totalIncome = Object.values(INCOME).reduce((s, v) => s + v, 0);
+const familyBudget = Object.values(DEFAULT_BUDGETS).reduce((s, v) => s + v, 0);
+const familyIncome = Object.values(INCOME).reduce((s, v) => s + v, 0);
+const personalIncome = Object.values(PERSONAL_INCOME).reduce((s, v) => s + v, 0);
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
 type NewsItem = { title: string; link: string; pubDate: string; source: string; image: string; description?: string };
@@ -75,9 +78,18 @@ function SectionHeader({ title, href, label }: { title: string; href: string; la
 
 export default function Home() {
   const { user } = useUser();
+  const { scope, setScope } = useBudgetScope();
   const now = new Date();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loadingBudget, setLoadingBudget] = useState(true);
+  const [personalBudgetTotal, setPersonalBudgetTotal] = useState(0);
+
+  const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
+  const activeScope = canPersonal ? scope : "family";
+  const totalIncome = activeScope === "personal" ? personalIncome : familyIncome;
+  const totalBudget = activeScope === "personal" ? personalBudgetTotal : familyBudget;
+
+  useEffect(() => { setPersonalBudgetTotal(paymentsTotal(getPayments())); }, [activeScope]);
   const [newsTab, setNewsTab] = useState("ai");
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
@@ -87,13 +99,16 @@ export default function Home() {
   const [newsDigest, setNewsDigest] = useState("");
 
   useEffect(() => {
+    setLoadingBudget(true);
     const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
     supabase.from("entries").select("*")
+      .eq("scope", activeScope)
       .gte("expense_at", from).lt("expense_at", to)
       .order("expense_at", { ascending: false })
       .then(({ data }) => { setEntries(data ?? []); setLoadingBudget(false); });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScope]);
 
   // AI digest for the selected tab (edge-cached ~12h, cheap)
   useEffect(() => {
@@ -166,18 +181,36 @@ export default function Home() {
 
   const totalSpent = entries.reduce((s, e) => s + e.amount, 0);
   const remaining = totalBudget - totalSpent;
-  const budgetPct = Math.min(Math.round((totalSpent / totalBudget) * 100), 100);
+  const budgetPct = totalBudget > 0 ? Math.min(Math.round((totalSpent / totalBudget) * 100), 100) : 0;
   const progressColor = budgetPct >= 100 ? "bg-red-500" : budgetPct >= 80 ? "bg-orange-400" : budgetPct >= 60 ? "bg-yellow-400" : "bg-emerald-500";
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 pb-24 md:pb-8">
 
       {/* Header */}
-      <div className="space-y-0.5">
-        <p className="text-xs text-muted-foreground">{formatDate()}</p>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-          {greeting()}{user ? `, ${user.name}` : ""}
-        </h1>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-0.5">
+          <p className="text-xs text-muted-foreground">{formatDate()}</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            {greeting()}{user ? `, ${user.name}` : ""}
+          </h1>
+        </div>
+        {canPersonal && (
+          <div className="flex bg-muted p-1 rounded-xl gap-1 shrink-0">
+            <button
+              onClick={() => setScope("family")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeScope === "family" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Users size={13} /> Familiar
+            </button>
+            <button
+              onClick={() => setScope("personal")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeScope === "personal" ? "bg-violet-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <User size={13} /> Personal
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Ask the assistant — inline chat, expands in place */}

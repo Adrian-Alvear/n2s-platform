@@ -21,6 +21,7 @@ export async function buildChatContext(): Promise<string> {
     const { data } = await supabase
       .from("entries")
       .select("*")
+      .eq("scope", "family")
       .gte("expense_at", from)
       .lt("expense_at", to)
       .order("expense_at", { ascending: false });
