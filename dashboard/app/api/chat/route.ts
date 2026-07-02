@@ -155,9 +155,18 @@ export async function POST(request: Request) {
     system.push({
       role: "system",
       content:
-        "Here is the family's current dashboard DATA. Use it for budget/news questions. " +
-        "Only use these numbers — do not invent figures.\n\n" +
+        "The family's current dashboard DATA is below. For ANY budget or spending question, " +
+        "use ONLY these exact numbers — quote them verbatim. If 'Total spent' is $0, the answer " +
+        "is $0. NEVER invent, round, or estimate amounts (e.g. do not say $5,000 or $2,000 unless " +
+        "those exact numbers appear here).\n\n" +
         context,
+    });
+  } else {
+    system.push({
+      role: "system",
+      content:
+        "You do not currently have the family's budget data loaded. If asked about specific budget " +
+        "or spending amounts, say the data isn't available right now — do NOT make up any numbers.",
     });
   }
 
@@ -202,13 +211,20 @@ export async function POST(request: Request) {
         if (news) blocks.push(`News results for "${query}":\n${news}`);
       }
 
+      const emptyMsg = isSoccer(lastUser)
+        ? "There are no soccer matches scheduled in the tracked leagues today (World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A). Tell the user that plainly."
+        : isUfc(lastUser)
+        ? "No upcoming UFC events were found. Tell the user that plainly."
+        : "You searched but found no useful results. Tell the user you couldn't find current information on that, briefly.";
+
       const research: ChatMessage = {
         role: "system",
         content: blocks.length
-          ? "SEARCH RESULTS (live from the web):\n\n" +
+          ? "LIVE RESULTS (fetched just now):\n\n" +
             blocks.join("\n\n") +
-            "\n\nAnswer the user's question using these results, in plain friendly language. Mention the source briefly."
-          : "You tried to search the web but found no useful results. Tell the user you couldn't find current information on that, briefly.",
+            "\n\nAnswer the user's question using ONLY these results, in plain friendly language. " +
+            "Mention the source briefly. Do not add scores or facts that aren't listed here."
+          : emptyMsg,
       };
 
       const stream = await ai.run(model, {

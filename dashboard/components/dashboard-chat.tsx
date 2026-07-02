@@ -45,6 +45,9 @@ export function DashboardChat() {
     setBusy(true);
 
     try {
+      // Make sure the real budget/news data is loaded before asking
+      if (!contextRef.current) contextRef.current = await buildChatContext();
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

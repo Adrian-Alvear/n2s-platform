@@ -79,15 +79,19 @@ export default function BudgetOverview() {
               {CATEGORIES.map((cat) => {
                 const spent = spentByCategory[cat] ?? 0;
                 const budget = DEFAULT_BUDGETS[cat];
-                const pct = Math.min((spent / budget) * 100, 100);
-                const over = spent > budget;
+                const unbudgeted = budget <= 0;
+                const pct = unbudgeted ? (spent > 0 ? 100 : 0) : Math.min((spent / budget) * 100, 100);
+                const over = !unbudgeted && spent > budget;
                 return (
                   <Card key={cat} className="hover:shadow-md transition-shadow">
                     <CardContent className="p-3 text-center">
                       <div className="text-2xl mb-1">{CATEGORY_ICONS[cat]}</div>
                       <p className="text-xs font-medium leading-tight truncate">{cat}</p>
                       <p className={`text-xs mt-1 font-semibold ${over ? "text-red-500" : "text-muted-foreground"}`}>
-                        ${spent.toFixed(0)}<span className="font-normal text-muted-foreground">/{budget.toFixed(0)}</span>
+                        ${spent.toFixed(0)}
+                        <span className="font-normal text-muted-foreground">
+                          {unbudgeted ? " · no budget" : `/${budget.toFixed(0)}`}
+                        </span>
                       </p>
                       <div className={`h-1 rounded-full mt-2 ${getProgressBg(pct)}`}>
                         <div className={`h-1 rounded-full ${getProgressColor(pct)}`} style={{ width: `${pct}%` }} />
@@ -137,12 +141,13 @@ export default function BudgetOverview() {
               {CATEGORIES.map((cat) => {
                 const spent = spentByCategory[cat] ?? 0;
                 const budget = DEFAULT_BUDGETS[cat];
-                const pct = Math.min((spent / budget) * 100, 100);
+                const unbudgeted = budget <= 0;
+                const pct = unbudgeted ? (spent > 0 ? 100 : 0) : Math.min((spent / budget) * 100, 100);
                 return (
                   <div key={cat}>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="font-medium truncate">{cat}</span>
-                      <span className="text-muted-foreground shrink-0 ml-2">{Math.round(pct)}%</span>
+                      <span className="text-muted-foreground shrink-0 ml-2">{unbudgeted ? (spent > 0 ? `$${spent.toFixed(0)}` : "—") : `${Math.round(pct)}%`}</span>
                     </div>
                     <div className={`h-1.5 rounded-full ${getProgressBg(pct)}`}>
                       <div className={`h-1.5 rounded-full ${getProgressColor(pct)}`} style={{ width: `${pct}%` }} />
