@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { buildChatContext } from "@/lib/chat-context";
+import { addUsage, EST } from "@/lib/ai-usage";
 import { Sparkles, Send, Loader2, X, Maximize2 } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -13,15 +14,21 @@ export function DashboardChat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [model, setModel] = useState<"fast" | "smart">("fast");
+  const [model, setModelState] = useState<"fast" | "smart">("fast");
   const contextRef = useRef("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     buildChatContext().then((c) => { contextRef.current = c; });
     const saved = localStorage.getItem("n2s_chat_model");
-    if (saved === "fast" || saved === "smart") setModel(saved);
+    if (saved === "fast" || saved === "smart") setModelState(saved);
   }, []);
+
+  // Shared preference with the full chat page
+  function setModel(m: "fast" | "smart") {
+    setModelState(m);
+    localStorage.setItem("n2s_chat_model", m);
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -78,6 +85,7 @@ export function DashboardChat() {
         }
       }
       if (!assistant) setMessages([...next, { role: "assistant", content: "I didn't catch a response — try again?" }]);
+      else addUsage(model === "smart" ? EST.smart : EST.fast);
     } catch {
       setMessages([...next, { role: "assistant", content: "Couldn't reach the assistant. Check your connection." }]);
     } finally {
@@ -100,6 +108,23 @@ export function DashboardChat() {
               <Sparkles size={13} className="text-blue-600" /> Assistant
             </div>
             <div className="flex items-center gap-1">
+              {/* Fast / Smart toggle — shared with the full chat page */}
+              <div className="flex bg-muted p-0.5 rounded-md gap-0.5 mr-1">
+                <button
+                  onClick={() => setModel("fast")}
+                  title="Faster, more free messages/day"
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${model === "fast" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Fast
+                </button>
+                <button
+                  onClick={() => setModel("smart")}
+                  title="Smarter, uses more of the daily free allowance"
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${model === "smart" ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Smart
+                </button>
+              </div>
               <Link href="/chat" title="Open full chat" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Maximize2 size={13} />
               </Link>
