@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getNewsItems } from "../news/route";
 
 // Fast/cheapest model — plenty for a short summary
 const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
@@ -28,14 +29,10 @@ export async function GET(request: Request) {
   const category = url.searchParams.get("category") ?? "ai";
   const label = LABELS[category] ?? "news";
 
-  // Reuse the existing news route (already cached) — forward the same params
+  // Fetch feeds directly (not via internal HTTP — Cloudflare Access blocks that)
   let items: NewsItem[] = [];
   try {
-    const newsUrl = new URL("/api/news", request.url);
-    newsUrl.search = url.searchParams.toString();
-    const res = await fetch(newsUrl.toString());
-    const data = (await res.json()) as { items?: NewsItem[] };
-    items = data.items ?? [];
+    items = await getNewsItems(url.searchParams);
   } catch {
     return Response.json({ summary: "" });
   }

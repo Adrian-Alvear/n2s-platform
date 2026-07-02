@@ -33,12 +33,12 @@ const DEFAULT_MODEL: keyof typeof MODELS = "fast";
 const SYSTEM_PROMPT =
   "You are a warm, helpful assistant inside the N2S family dashboard, an app the family uses " +
   "for budgeting and news. Amounts are in US dollars. Keep answers concise and friendly.\n\n" +
-  "You have tools available:\n" +
-  "- web_search: search the live web for current events, facts, prices, or anything you don't already know.\n" +
-  "- search_news: get the latest news headlines about a specific topic.\n" +
-  "Use a tool when the user asks about something not already in the data you were given. " +
-  "For questions about their budget or the headlines already provided, answer directly. " +
-  "Never invent budget figures — only use the numbers given to you.";
+  "You can use tools (web_search, search_news) ONLY when the user clearly asks for current or " +
+  "external information you don't already have. For greetings, small talk, budget questions, or " +
+  "anything you can answer directly — just reply normally.\n\n" +
+  "CRITICAL: Never describe, mention, or narrate tools. Never output JSON, function names, or " +
+  "phrases like 'I can suggest a tool call'. Either call a tool silently, or just answer in plain " +
+  "conversational language. Never invent budget figures — only use numbers you were given.";
 
 // ─── Tools ───────────────────────────────────────────────────────────────────
 
@@ -127,9 +127,39 @@ async function searchNews(topic: string): Promise<string> {
 }
 
 async function runTool(name: string, args: Record<string, unknown>): Promise<string> {
-  if (name === "web_search") return webSearch(String(args.query ?? ""));
-  if (name === "search_news") return searchNews(String(args.topic ?? ""));
+  if (name === "web_search") return webSearch(String(args.query ?? args.q ?? ""));
+  if (name === "search_news") return searchNews(String(args.topic ?? args.query ?? ""));
   return "Unknown tool.";
+}
+
+type Call = { name: string; args: Record<string, unknown> };
+
+// Small models sometimes write the tool call as text instead of emitting a real
+// one. Catch that: pull any {"name":"web_search",...} block out of the response.
+function extractToolCallsFromText(text: string): Call[] {
+  if (!text) return [];
+  const out: Call[] = [];
+  const re = /\{(?:[^{}]|\{[^{}]*\})*"name"\s*:\s*"(web_search|search_news)"(?:[^{}]|\{[^{}]*\})*\}/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(m[0]) as { name?: string; parameters?: unknown; arguments?: unknown };
+      const p = (obj.parameters ?? obj.arguments ?? {}) as Record<string, unknown>;
+      if (obj.name) out.push({ name: obj.name, args: typeof p === "object" && p ? p : {} });
+    } catch {
+      /* not valid JSON — skip */
+    }
+  }
+  return out;
+}
+
+// Strip any leaked tool JSON / meta-narration from a plain answer.
+function cleanAnswer(text: string): string {
+  return text
+    .replace(/\{(?:[^{}]|\{[^{}]*\})*"name"\s*:\s*"(?:web_search|search_news)"(?:[^{}]|\{[^{}]*\})*\}/gi, "")
+    .replace(/I don't see a function call[^.]*\.|However, I can suggest[^.]*\.|I can suggest a tool call[^.]*\./gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 // ─── SSE helpers ─────────────────────────────────────────────────────────────
@@ -209,12 +239,9 @@ export async function POST(request: Request) {
       max_tokens: 1024,
     })) as AIResult;
 
-    const calls = Array.isArray(first.tool_calls) ? first.tool_calls : [];
-
-    if (calls.length > 0) {
-      // Execute the requested tools (cap to 3)
-      const results: string[] = [];
-      for (const c of calls.slice(0, 3)) {
+    // Collect tool calls — structured first, then any leaked into the text
+    let toolCalls: Call[] = (Array.isArray(first.tool_calls) ? first.tool_calls : [])
+      .map((c) => {
         const name = c.name ?? c.function?.name ?? "";
         let args: Record<string, unknown> = {};
         const rawArgs = c.arguments ?? c.function?.arguments;
@@ -227,16 +254,28 @@ export async function POST(request: Request) {
         } else if (rawArgs && typeof rawArgs === "object") {
           args = rawArgs as Record<string, unknown>;
         }
-        if (name) results.push(`Result of ${name}(${JSON.stringify(args)}):\n${await runTool(name, args)}`);
+        return { name, args };
+      })
+      .filter((c) => c.name);
+
+    if (toolCalls.length === 0) {
+      toolCalls = extractToolCallsFromText(first.response ?? "");
+    }
+
+    if (toolCalls.length > 0) {
+      const results: string[] = [];
+      for (const c of toolCalls.slice(0, 3)) {
+        results.push(`Result of ${c.name}(${JSON.stringify(c.args)}):\n${await runTool(c.name, c.args)}`);
       }
 
       // Pass 2 — stream the final answer using the tool results
       const toolMsg: ChatMessage = {
         role: "system",
         content:
-          "You called tools to help answer. Here are the results:\n\n" +
+          "You looked up information to answer. Results:\n\n" +
           results.join("\n\n") +
-          "\n\nAnswer the user's question using these results. Be concise and mention the source when relevant.",
+          "\n\nNow answer the user's question in plain, friendly language using these results. " +
+          "Mention the source briefly. Do NOT output JSON or mention tools.",
       };
       const stream = (await ai.run(model, {
         messages: [...system, ...trimmed, toolMsg],
@@ -247,8 +286,9 @@ export async function POST(request: Request) {
       return new Response(stream, { headers: SSE_HEADERS });
     }
 
-    // No tool needed — we already have the answer text
-    return new Response(sseFromText(first.response ?? ""), { headers: SSE_HEADERS });
+    // No tool needed — clean any stray JSON/meta and return the answer
+    const answer = cleanAnswer(first.response ?? "");
+    return new Response(sseFromText(answer || "Hi! How can I help you today?"), { headers: SSE_HEADERS });
   } catch (err) {
     console.error("Workers AI error:", err);
     return Response.json({ error: "The assistant is unavailable right now." }, { status: 502 });

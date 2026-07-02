@@ -8,9 +8,9 @@ import { useUser } from "@/lib/user-context";
 import { supabase } from "@/lib/supabase";
 import { DEFAULT_BUDGETS, INCOME, MEMBER_COLORS } from "@/lib/data";
 import { getCover, setCover } from "@/lib/cover-cache";
-import { useRouter } from "next/navigation";
+import { DashboardChat } from "@/components/dashboard-chat";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight, Sparkles, Send } from "lucide-react";
+import { ArrowRight, Loader2, Clock, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, string> = {
   Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
@@ -74,9 +74,7 @@ function SectionHeader({ title, href, label }: { title: string; href: string; la
 
 export default function Home() {
   const { user } = useUser();
-  const router = useRouter();
   const now = new Date();
-  const [askInput, setAskInput] = useState("");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loadingBudget, setLoadingBudget] = useState(true);
   const [newsTab, setNewsTab] = useState("ai");
@@ -169,26 +167,8 @@ export default function Home() {
         </h1>
       </div>
 
-      {/* Ask the assistant */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const q = askInput.trim();
-          if (q) router.push(`/chat?q=${encodeURIComponent(q)}`);
-        }}
-        className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 focus-within:border-blue-400 transition-colors"
-      >
-        <Sparkles size={17} className="text-blue-600 shrink-0" />
-        <input
-          value={askInput}
-          onChange={(e) => setAskInput(e.target.value)}
-          placeholder="Ask the assistant about your budget, news…"
-          className="flex-1 bg-transparent outline-none text-sm py-1"
-        />
-        <Button type="submit" size="icon" disabled={!askInput.trim()} className="rounded-xl bg-blue-600 hover:bg-blue-700 shrink-0 h-8 w-8">
-          <Send size={15} />
-        </Button>
-      </form>
+      {/* Ask the assistant — inline chat, expands in place */}
+      <DashboardChat />
 
       {/* ── Top: News hero + sidebar ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

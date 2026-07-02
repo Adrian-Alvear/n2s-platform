@@ -161,21 +161,22 @@ function parseItems(xml: string, feedSource: string): NewsItem[] {
   return items;
 }
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const category = url.searchParams.get("category") ?? "ai";
+// Shared fetcher — used by this route AND the news-digest route (direct call,
+// no internal HTTP fetch, which Cloudflare Access would otherwise block).
+export async function getNewsItems(params: URLSearchParams): Promise<NewsItem[]> {
+  const category = params.get("category") ?? "ai";
 
   let feeds: { url: string; source: string }[];
 
   if (category === "custom") {
-    const topic = url.searchParams.get("topic");
-    const feedUrl = url.searchParams.get("url");
+    const topic = params.get("topic");
+    const feedUrl = params.get("url");
     if (topic) {
       feeds = [{ url: `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-US&gl=US&ceid=US:en`, source: "Google News" }];
     } else if (feedUrl) {
       feeds = [{ url: feedUrl, source: "Custom Feed" }];
     } else {
-      return Response.json({ items: [] });
+      return [];
     }
   } else {
     feeds = FEEDS[category] ?? FEEDS.ai;
@@ -193,7 +194,7 @@ export async function GET(request: Request) {
   );
 
   const seen = new Set<string>();
-  const items = results
+  return results
     .filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status === "fulfilled")
     .flatMap((r) => r.value)
     .filter((item) => {
@@ -207,7 +208,11 @@ export async function GET(request: Request) {
       const db = b.pubDate ? new Date(b.pubDate).getTime() : 0;
       return db - da;
     });
+}
 
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const items = await getNewsItems(url.searchParams);
   return Response.json({ items }, {
     headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
   });
