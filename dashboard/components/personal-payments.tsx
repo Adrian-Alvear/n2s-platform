@@ -50,9 +50,9 @@ export function PersonalPayments() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pagos mensuales</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Monthly payments</h2>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => setAdding((a) => !a)}>
-          <Plus size={13} /> Agregar
+          <Plus size={13} /> Add
         </Button>
       </div>
       <Card>
@@ -64,20 +64,20 @@ export function PersonalPayments() {
               <div className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums">{pct}%</div>
             </div>
             <div>
-              <p className="text-sm font-semibold">{paidCount} de {items.length} pagados</p>
-              <p className="text-xs text-muted-foreground tabular-nums">${paidAmt.toFixed(0)} de ${total.toFixed(0)} este mes</p>
+              <p className="text-sm font-semibold">{paidCount} of {items.length} paid</p>
+              <p className="text-xs text-muted-foreground tabular-nums">${paidAmt.toFixed(0)} of ${total.toFixed(0)} this month</p>
             </div>
           </div>
 
           {/* Add form */}
           {adding && (
             <div className="flex items-center gap-2 py-3 border-b border-border">
-              <Input placeholder="Nombre (ej. Renta)" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="flex-1" />
+              <Input placeholder="Name (e.g. Rent)" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="flex-1" />
               <div className="relative w-24">
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                 <Input type="number" placeholder="0" className="pl-6" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
               </div>
-              <Button size="sm" onClick={add} className="bg-violet-600 hover:bg-violet-700 text-white shrink-0">OK</Button>
+              <Button size="sm" onClick={add} className="bg-violet-600 hover:bg-violet-700 text-white shrink-0">Add</Button>
             </div>
           )}
 
@@ -99,7 +99,7 @@ export function PersonalPayments() {
               </div>
             ))}
             {items.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-6">Agrega tus pagos mensuales</p>
+              <p className="text-sm text-muted-foreground text-center py-6">Add your monthly payments</p>
             )}
           </div>
         </CardContent>

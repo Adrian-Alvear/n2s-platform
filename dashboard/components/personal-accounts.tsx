@@ -48,9 +48,9 @@ export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => voi
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Mis cuentas</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">My accounts</h2>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={openEdit}>
-          <Pencil size={12} /> Editar
+          <Pencil size={12} /> Edit
         </Button>
       </div>
       <Card>
@@ -75,7 +75,7 @@ export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => voi
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Editar cuentas</DialogTitle>
+            <DialogTitle>Edit accounts</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-1">
             {([
@@ -97,7 +97,7 @@ export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => voi
                 </div>
               </div>
             ))}
-            <Button onClick={save} className="w-full bg-violet-600 hover:bg-violet-700 text-white">Guardar</Button>
+            <Button onClick={save} className="w-full bg-violet-600 hover:bg-violet-700 text-white">Save</Button>
           </div>
         </DialogContent>
       </Dialog>

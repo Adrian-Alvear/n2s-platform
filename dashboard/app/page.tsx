@@ -201,7 +201,7 @@ export default function Home() {
               onClick={() => setScope("family")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeScope === "family" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Users size={13} /> Familiar
+              <Users size={13} /> Family
             </button>
             <button
               onClick={() => setScope("personal")}

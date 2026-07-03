@@ -66,6 +66,21 @@ export default function BudgetOverview() {
   const totalSpent = Object.values(spentByCategory).reduce((s, v) => s + v, 0);
   const saldo = totalIncome - totalBudget;
 
+  // Personal dashboard is in English; family stays in Spanish
+  const isP = activeScope === "personal";
+  const L = {
+    saved: isP ? "Available this month" : "Ahorro del mes",
+    savedSub: isP ? "Income − Bills" : "Ingresos − Presupuesto",
+    income: isP ? "Income" : "Ingresos",
+    budget: isP ? "Bills" : "Presupuesto",
+    spent: isP ? "Spent" : "Gastado",
+    remaining: isP ? "Left" : "Restante",
+    recent: isP ? "Recent transactions" : "Últimos movimientos",
+    viewAll: isP ? "View all" : "Ver todos",
+    empty: isP ? "No transactions this month" : "No hay movimientos este mes",
+    loading: isP ? "Loading..." : "Cargando...",
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8">
 
@@ -76,7 +91,7 @@ export default function BudgetOverview() {
             onClick={() => setScope("family")}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeScope === "family" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <Users size={14} /> Familiar
+            <Users size={14} /> Family
           </button>
           <button
             onClick={() => setScope("personal")}
@@ -90,19 +105,19 @@ export default function BudgetOverview() {
       <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 text-white p-5 md:p-8 shadow-lg">
         <div className="flex items-start justify-between mb-5 md:mb-6 gap-4">
           <div>
-            <p className="text-violet-200 text-sm font-medium mb-1">Ahorro del mes</p>
+            <p className="text-violet-200 text-sm font-medium mb-1">{L.saved}</p>
             <p className="text-4xl md:text-5xl font-bold tracking-tight">${saldo.toFixed(2)}</p>
-            <p className="text-violet-300/80 text-xs mt-1">Ingresos − Presupuesto</p>
+            <p className="text-violet-300/80 text-xs mt-1">{L.savedSub}</p>
           </div>
           <div className="bg-white/10 rounded-xl px-3 py-1.5 shrink-0">
             <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
           </div>
         </div>
         <div className="grid grid-cols-2 md:flex md:gap-6 gap-3 text-sm">
-          <div><p className="text-violet-300">Ingresos</p><p className="font-semibold text-base md:text-lg">${totalIncome.toLocaleString()}</p></div>
-          <div><p className="text-violet-300">Presupuesto</p><p className="font-semibold text-base md:text-lg">${totalBudget.toFixed(0)}</p></div>
-          <div><p className="text-violet-300">Gastado</p><p className={`font-semibold text-base md:text-lg ${totalSpent > totalBudget ? "text-red-300" : ""}`}>${totalSpent.toFixed(0)}</p></div>
-          <div><p className="text-violet-300">Restante</p><p className={`font-semibold text-base md:text-lg ${(totalBudget - totalSpent) < 0 ? "text-red-300" : "text-emerald-300"}`}>${(totalBudget - totalSpent).toFixed(0)}</p></div>
+          <div><p className="text-violet-300">{L.income}</p><p className="font-semibold text-base md:text-lg">${totalIncome.toLocaleString()}</p></div>
+          <div><p className="text-violet-300">{L.budget}</p><p className="font-semibold text-base md:text-lg">${totalBudget.toFixed(0)}</p></div>
+          <div><p className="text-violet-300">{L.spent}</p><p className={`font-semibold text-base md:text-lg ${totalSpent > totalBudget ? "text-red-300" : ""}`}>${totalSpent.toFixed(0)}</p></div>
+          <div><p className="text-violet-300">{L.remaining}</p><p className={`font-semibold text-base md:text-lg ${(totalBudget - totalSpent) < 0 ? "text-red-300" : "text-emerald-300"}`}>${(totalBudget - totalSpent).toFixed(0)}</p></div>
         </div>
       </div>
 
@@ -151,15 +166,15 @@ export default function BudgetOverview() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Últimos movimientos</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{L.recent}</h2>
               <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-violet-600" onClick={() => setSheetOpen(true)}>
-                Ver todos <ArrowRight size={13} />
+                {L.viewAll} <ArrowRight size={13} />
               </Button>
             </div>
             <Card>
               <CardContent className="p-0 divide-y divide-border">
-                {loading && <div className="flex items-center justify-center py-10 text-muted-foreground"><Loader2 className="animate-spin mr-2" size={16} /> Cargando...</div>}
-                {!loading && entries.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">No hay movimientos este mes</div>}
+                {loading && <div className="flex items-center justify-center py-10 text-muted-foreground"><Loader2 className="animate-spin mr-2" size={16} /> {L.loading}</div>}
+                {!loading && entries.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">{L.empty}</div>}
                 {entries.slice(0, 8).map((e) => (
                   <div key={e.id} className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -187,14 +202,7 @@ export default function BudgetOverview() {
               <PersonalAccounts onChange={setAccounts} />
 
               {/* AI suggestions */}
-              <PersonalTips
-                income={totalIncome}
-                budget={totalBudget}
-                spent={totalSpent}
-                accounts={accounts}
-                spentByCategory={spentByCategory}
-                budgets={budgets}
-              />
+              <PersonalTips income={totalIncome} spent={totalSpent} accounts={accounts} />
             </>
           ) : (
             <Card>
