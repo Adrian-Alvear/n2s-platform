@@ -191,7 +191,7 @@ export default function Home() {
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-0.5">
           <p className="text-xs text-muted-foreground">{formatDate()}</p>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight mt-0.5">
             {greeting()}{user ? `, ${user.name}` : ""}
           </h1>
         </div>

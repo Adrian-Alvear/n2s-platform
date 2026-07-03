@@ -142,7 +142,7 @@ export default function Chat() {
             <MessageSquare size={18} className="text-blue-600" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-semibold leading-tight">Assistant</h1>
+            <h1 className="font-heading text-lg font-medium leading-tight">Assistant</h1>
             <p className="text-xs text-muted-foreground truncate" title="Estimated share of today's free Workers AI allowance used on this device. Exact usage is in your Cloudflare dashboard.">
               Budget · News · Web · <span className={usagePct >= 90 ? "text-amber-600" : ""}>~{usagePct}% of today&apos;s free AI</span>
             </p>

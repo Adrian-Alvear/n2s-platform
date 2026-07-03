@@ -606,7 +606,7 @@ export default function News() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">News</h1>
+        <h1 className="font-heading text-3xl font-medium tracking-tight">News</h1>
         <span className="text-xs text-muted-foreground">Live</span>
       </div>
 
