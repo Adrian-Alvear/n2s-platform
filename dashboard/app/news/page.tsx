@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCover, setCover } from "@/lib/cover-cache";
-import { readNewsCache, writeNewsCache } from "@/lib/news-cache";
+import { readNewsCache, writeNewsCache, readDigestCache, writeDigestCache } from "@/lib/news-cache";
 import { parseDigest } from "@/lib/digest";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -529,13 +529,22 @@ export default function News() {
       .catch(() => setLoading(false));
   }, [category, customFeeds]);
 
-  // AI daily digest — cached ~12h server-side, so this is cheap
+  // AI daily digest — cached in-session so reloads paint it instantly
   useEffect(() => {
     if (category === "discover") { setDigest(""); return; }
-    setDigest("");
-    setDigestLoading(true);
 
     const custom = customFeeds.find(f => f.id === category);
+    const cacheKey = custom ? `${custom.type}:${custom.value}` : category;
+
+    const cachedDigest = readDigestCache(cacheKey);
+    if (cachedDigest) {
+      setDigest(cachedDigest);
+      setDigestLoading(false);
+    } else {
+      setDigest("");
+      setDigestLoading(true);
+    }
+
     let url = `/api/news-digest?category=${category}`;
     if (custom) {
       url = custom.type === "topic"
@@ -545,7 +554,7 @@ export default function News() {
 
     fetch(url)
       .then(r => r.json())
-      .then(({ summary }) => setDigest(summary ?? ""))
+      .then(({ summary }) => { setDigest(summary ?? ""); if (summary) writeDigestCache(cacheKey, summary); })
       .catch(() => {})
       .finally(() => setDigestLoading(false));
   }, [category, customFeeds]);

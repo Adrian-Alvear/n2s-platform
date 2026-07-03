@@ -25,3 +25,23 @@ export function writeNewsCache(key: string, items: NewsItem[]) {
     /* quota / unavailable — ignore */
   }
 }
+
+// Digest cache — the AI summary is expensive to generate, so remember it for
+// the session and paint it instantly on reload while revalidating.
+const DIGEST_PREFIX = "n2s_digest_cache:";
+
+export function readDigestCache(key: string): string | null {
+  try {
+    return sessionStorage.getItem(DIGEST_PREFIX + key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeDigestCache(key: string, summary: string) {
+  try {
+    sessionStorage.setItem(DIGEST_PREFIX + key, summary);
+  } catch {
+    /* ignore */
+  }
+}
