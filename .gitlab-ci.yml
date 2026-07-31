@@ -1,0 +1,17 @@
+# Self-hosted Renovate — keeps dependencies current by opening merge requests
+# for you to review and accept. Runs ONLY on a schedule (set one up in GitLab:
+# Build → Pipeline schedules), never on normal pushes, so it won't interfere
+# with the Cloudflare deploy.
+renovate:
+  image: renovate/renovate:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    RENOVATE_PLATFORM: "gitlab"
+    RENOVATE_ENDPOINT: "https://gitlab.com/api/v4"
+    RENOVATE_TOKEN: "$RENOVATE_TOKEN"
+    RENOVATE_AUTODISCOVER: "false"
+    RENOVATE_REPOSITORIES: '["n2s3/n2s-platform"]'
+    LOG_LEVEL: "info"
+  script:
+    - renovate

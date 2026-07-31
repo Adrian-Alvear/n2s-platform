@@ -1,0 +1,36 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard"
+  ],
+  "timezone": "America/Toronto",
+  "schedule": ["before 9am on monday"],
+  "includePaths": ["dashboard/**"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 0,
+  "dependencyDashboardTitle": "🤖 Dependency updates",
+  "packageRules": [
+    {
+      "description": "Batch all non-major (minor + patch) updates into one calm MR",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "Keep major updates separate — they need a closer look",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major-update"]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on the first day of the month"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  }
+}
