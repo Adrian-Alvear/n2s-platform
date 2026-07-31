@@ -182,21 +182,28 @@ export async function getNewsItems(params: URLSearchParams): Promise<NewsItem[]>
     feeds = FEEDS[category] ?? FEEDS.ai;
   }
 
-  const results = await Promise.allSettled(
-    feeds.map(async ({ url: feedUrl, source }) => {
-      const res = await fetch(feedUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; n2s-dashboard/1.0)" },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      return parseItems(await res.text(), source);
+  // Fetch all feeds in parallel, collecting results as they arrive. Each feed
+  // never rejects (empty on error/timeout), and the whole thing is capped by an
+  // overall deadline — so one slow feed can't stall the response.
+  const collected: NewsItem[] = [];
+  const feedJobs = feeds.map(({ url: feedUrl, source }) =>
+    fetch(feedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; n2s-dashboard/1.0)" },
+      signal: AbortSignal.timeout(4000),
     })
+      .then((res) => (res.ok ? res.text() : Promise.reject(new Error(`${res.status}`))))
+      .then((xml) => { collected.push(...parseItems(xml, source)); })
+      .catch(() => { /* skip this feed */ })
   );
 
+  // Return as soon as every feed settles OR after 4.5s — whichever comes first.
+  await Promise.race([
+    Promise.allSettled(feedJobs),
+    new Promise((resolve) => setTimeout(resolve, 4500)),
+  ]);
+
   const seen = new Set<string>();
-  return results
-    .filter((r): r is PromiseFulfilledResult<NewsItem[]> => r.status === "fulfilled")
-    .flatMap((r) => r.value)
+  return collected
     .filter((item) => {
       const key = item.title.toLowerCase().slice(0, 60);
       if (seen.has(key)) return false;
