@@ -9,7 +9,6 @@ renovate:
   variables:
     RENOVATE_PLATFORM: "gitlab"
     RENOVATE_ENDPOINT: "https://gitlab.com/api/v4"
-    RENOVATE_TOKEN: "$RENOVATE_TOKEN"
     RENOVATE_AUTODISCOVER: "false"
     RENOVATE_REPOSITORIES: '["n2s3/n2s-platform"]'
     LOG_LEVEL: "info"
