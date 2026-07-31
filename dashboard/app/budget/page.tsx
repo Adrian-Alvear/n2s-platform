@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_BUDGETS, PERSONAL_BUDGETS, CATEGORIES, INCOME, PERSONAL_INCOME, MEMBER_COLORS, MEMBERS, getProgressColor, getProgressBg } from "@/lib/data";
+import { DEFAULT_BUDGETS, PERSONAL_BUDGETS, CATEGORIES, INCOME, PERSONAL_INCOME, MEMBER_COLORS, MEMBERS } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/lib/user-context";
 import { useBudgetScope } from "@/lib/budget-scope";
@@ -12,7 +12,9 @@ import { SpendingSheet } from "@/components/spending-sheet";
 import { PersonalTips } from "@/components/personal-tips";
 import { PersonalAccounts } from "@/components/personal-accounts";
 import { PersonalPayments } from "@/components/personal-payments";
+import { CategoryEnvelopes } from "@/components/category-envelopes";
 import type { Accounts } from "@/lib/personal-accounts";
+import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
 import { Loader2, ArrowRight, Users, User } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
@@ -44,7 +46,22 @@ export default function BudgetOverview() {
   const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
   const activeScope = canPersonal ? scope : "family";
 
-  const budgets = activeScope === "personal" ? PERSONAL_BUDGETS : DEFAULT_BUDGETS;
+  // Adjustable per-category limits (family) — loaded from the per-month store
+  const [limits, setLimits] = useState<Limits>({ ...DEFAULT_BUDGETS });
+  useEffect(() => {
+    if (activeScope === "family") setLimits(getLimits("family", year, month));
+  }, [activeScope, year, month]);
+
+  function applyLimits(next: Limits) {
+    setLimits(next);
+    saveLimits("family", year, month, next);
+  }
+  function resetToDefaults() {
+    resetLimits("family", year, month);
+    setLimits(getLimits("family", year, month));
+  }
+
+  const budgets = activeScope === "personal" ? PERSONAL_BUDGETS : limits;
   const income = activeScope === "personal" ? PERSONAL_INCOME : INCOME;
   const totalIncome = Object.values(income).reduce((s, v) => s + v, 0);
   const totalBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
@@ -127,41 +144,14 @@ export default function BudgetOverview() {
             // Personal — monthly-payments checklist with progress
             <PersonalPayments />
           ) : (
-            // Family — category budgets list
-            <div>
-              <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Categorías</h2>
-              <Card>
-                <CardContent className="p-0 divide-y divide-border">
-                  {CATEGORIES.map((cat) => {
-                    const spent = spentByCategory[cat] ?? 0;
-                    const budget = budgets[cat];
-                    const unbudgeted = budget <= 0;
-                    const pct = unbudgeted ? (spent > 0 ? 100 : 0) : Math.min((spent / budget) * 100, 100);
-                    const over = !unbudgeted && spent > budget;
-                    return (
-                      <div key={cat} className="flex items-center gap-3 px-4 py-3">
-                        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">{CATEGORY_ICONS[cat]}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <span className="text-sm font-medium truncate">{cat}</span>
-                            <span className={`text-xs font-semibold tabular-nums shrink-0 ${over ? "text-red-500" : "text-foreground"}`}>
-                              ${spent.toFixed(0)}
-                              <span className="font-normal text-muted-foreground">{unbudgeted ? "" : ` / ${budget.toFixed(0)}`}</span>
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-1.5 rounded-full flex-1 ${getProgressBg(pct)}`}>
-                              <div className={`h-1.5 rounded-full ${getProgressColor(pct)}`} style={{ width: `${pct}%` }} />
-                            </div>
-                            <span className="text-[10px] text-muted-foreground tabular-nums w-9 text-right shrink-0">{unbudgeted ? "—" : `${Math.round(pct)}%`}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            </div>
+            // Family — adjustable envelope categories with reallocation
+            <CategoryEnvelopes
+              limits={limits}
+              spentByCategory={spentByCategory}
+              income={totalIncome}
+              onSave={applyLimits}
+              onReset={resetToDefaults}
+            />
           )}
 
           <div>
