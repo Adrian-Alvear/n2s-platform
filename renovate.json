@@ -6,7 +6,6 @@
     ":dependencyDashboard"
   ],
   "timezone": "America/Toronto",
-  "schedule": ["before 9am on monday"],
   "includePaths": ["dashboard/**"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 3,
@@ -26,8 +25,7 @@
     }
   ],
   "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["before 9am on the first day of the month"]
+    "enabled": true
   },
   "vulnerabilityAlerts": {
     "labels": ["security"],
