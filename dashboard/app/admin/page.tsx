@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { getSupabase } from "@/lib/supabase";
+import { mutate } from "@/lib/db";
 import { useUser } from "@/lib/user-context";
 import { Shield, Plus, Trash2, Pencil, Check, Loader2 } from "lucide-react";
 
@@ -44,6 +45,7 @@ export default function AdminPanel() {
   // Permissions state
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permsLoading, setPermsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Add user dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -83,11 +85,21 @@ export default function AdminPanel() {
     setPermissions((prev) =>
       prev.map((p) => p.feature === feature && p.role === role ? { ...p, allowed: next } : p)
     );
-    await getSupabase()
-      .from("role_permissions")
-      .update({ allowed: next })
-      .eq("feature", feature)
-      .eq("role", role);
+    const err = await mutate(
+      getSupabase()
+        .from("role_permissions")
+        .update({ allowed: next })
+        .eq("feature", feature)
+        .eq("role", role)
+    );
+    // The toggle was flipped optimistically — put it back if the write failed,
+    // otherwise the UI claims a permission that was never actually granted.
+    if (err) {
+      setPermissions((prev) =>
+        prev.map((p) => p.feature === feature && p.role === role ? { ...p, allowed: !next } : p)
+      );
+      setError("Could not update that permission. Try again.");
+    }
   }
 
   function openEdit(u: PlatformUser) {
@@ -99,11 +111,15 @@ export default function AdminPanel() {
 
   async function saveEdit() {
     if (!editUser) return;
+    setError(null);
     setEditSaving(true);
-    await getSupabase()
-      .from("platform_users")
-      .update({ name: editName, email: editEmail, role: editRole })
-      .eq("id", editUser.id);
+    const err = await mutate(
+      getSupabase()
+        .from("platform_users")
+        .update({ name: editName, email: editEmail, role: editRole })
+        .eq("id", editUser.id)
+    );
+    if (err) { setEditSaving(false); setError("Could not save those changes. Try again."); return; }
     setUsers((prev) =>
       prev.map((u) => u.id === editUser.id ? { ...u, name: editName, email: editEmail, role: editRole } : u)
     );
@@ -112,19 +128,29 @@ export default function AdminPanel() {
   }
 
   async function deleteUser(id: string) {
-    await getSupabase().from("platform_users").delete().eq("id", id);
+    setError(null);
+    const err = await mutate(getSupabase().from("platform_users").delete().eq("id", id));
+    // Only remove the row locally once the delete actually landed.
+    if (err) { setError("Could not delete that user."); return; }
     setUsers((prev) => prev.filter((u) => u.id !== id));
   }
 
   async function addUser() {
     if (!newEmail || !newName) return;
     setAddSaving(true);
-    const { data } = await getSupabase()
+    setError(null);
+    const { data, error: addError } = await getSupabase()
       .from("platform_users")
       .insert({ email: newEmail, name: newName, role: newRole })
       .select()
       .single();
-    if (data) setUsers((prev) => [...prev, data]);
+    if (addError || !data) {
+      console.error("[admin] add user failed:", addError?.message);
+      setAddSaving(false);
+      setError("Could not add that user. Try again.");
+      return;
+    }
+    setUsers((prev) => [...prev, data]);
     setNewEmail(""); setNewName(""); setNewRole("member");
     setAddSaving(false);
     setAddOpen(false);
@@ -140,6 +166,9 @@ export default function AdminPanel() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+          )}
           <p className="text-muted-foreground text-sm">Manage users and permissions</p>
         </div>
       </div>

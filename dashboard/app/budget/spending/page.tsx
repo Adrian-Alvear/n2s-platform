@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
+import { mutate } from "@/lib/db";
 import { useUser } from "@/lib/user-context";
 import { useBudgetScope } from "@/lib/budget-scope";
 import { MonthNav } from "@/components/month-nav";
@@ -90,6 +91,7 @@ export default function Spending() {
   const [addOpen, setAddOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
   const activeScope = canPersonal ? scope : "family";
@@ -110,24 +112,33 @@ export default function Spending() {
 
   async function addEntry({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!description || !amount || !category || !member) return;
+    setError(null);
     setSaving(true);
-    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope: activeScope });
-    await fetchEntries();
+    const err = await mutate(supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope: activeScope }));
     setSaving(false);
+    // Keep the dialog open on failure so the typed entry isn't lost.
+    if (err) { setError("No se pudo guardar el gasto. Intenta de nuevo."); return; }
+    await fetchEntries();
     setAddOpen(false);
   }
 
   async function saveEdit({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!editEntry || !description || !amount || !category || !member) return;
+    setError(null);
     setSaving(true);
-    await supabase.from("entries").update({ description, category, amount: parseFloat(amount), member }).eq("id", editEntry.id);
-    await fetchEntries();
+    const err = await mutate(supabase.from("entries").update({ description, category, amount: parseFloat(amount), member }).eq("id", editEntry.id));
     setSaving(false);
+    if (err) { setError("No se pudo guardar el cambio. Intenta de nuevo."); return; }
+    await fetchEntries();
     setEditEntry(null);
   }
 
   async function deleteEntry(id: number) {
-    await supabase.from("entries").delete().eq("id", id);
+    setError(null);
+    const err = await mutate(supabase.from("entries").delete().eq("id", id));
+    // Only drop it from the list once the delete actually succeeded — otherwise
+    // the row vanishes from the UI while still sitting in the database.
+    if (err) { setError("No se pudo eliminar el gasto."); return; }
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
@@ -144,6 +155,9 @@ export default function Spending() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+          )}
           <p className="text-muted-foreground text-sm mt-1">Registra y revisa todos los gastos</p>
         </div>
         <div className="flex items-center gap-3">

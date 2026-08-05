@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
+import { mutate } from "@/lib/db";
 import { MonthNav } from "@/components/month-nav";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
@@ -85,6 +86,7 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
   const [addOpen, setAddOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -102,24 +104,33 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
 
   async function addEntry({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!description || !amount || !category || !member) return;
+    setError(null);
     setSaving(true);
-    await supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope });
-    await fetchEntries();
+    const err = await mutate(supabase.from("entries").insert({ description, category, amount: parseFloat(amount), member, scope }));
     setSaving(false);
+    // Keep the dialog open on failure so the typed entry isn't lost.
+    if (err) { setError("No se pudo guardar el gasto. Intenta de nuevo."); return; }
+    await fetchEntries();
     setAddOpen(false);
   }
 
   async function saveEdit({ description, amount, category, member }: { description: string; amount: string; category: Category | ""; member: Member | "" }) {
     if (!editEntry || !description || !amount || !category || !member) return;
+    setError(null);
     setSaving(true);
-    await supabase.from("entries").update({ description, category, amount: parseFloat(amount), member }).eq("id", editEntry.id);
-    await fetchEntries();
+    const err = await mutate(supabase.from("entries").update({ description, category, amount: parseFloat(amount), member }).eq("id", editEntry.id));
     setSaving(false);
+    if (err) { setError("No se pudo guardar el cambio. Intenta de nuevo."); return; }
+    await fetchEntries();
     setEditEntry(null);
   }
 
   async function deleteEntry(id: number) {
-    await supabase.from("entries").delete().eq("id", id);
+    setError(null);
+    const err = await mutate(supabase.from("entries").delete().eq("id", id));
+    // Only drop it from the list once the delete actually succeeded — otherwise
+    // the row vanishes from the UI while still sitting in the database.
+    if (err) { setError("No se pudo eliminar el gasto."); return; }
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
@@ -138,6 +149,9 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
           <SheetHeader className="px-6 py-4 border-b border-border shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle>Gastos</SheetTitle>
+              {error && (
+                <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+              )}
               <div className="flex items-center gap-2">
                 <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
                 <Button size="sm" className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white" onClick={() => setAddOpen(true)}>

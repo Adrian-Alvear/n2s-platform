@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
+import { mutate } from "@/lib/db";
 import { useUser } from "@/lib/user-context";
 import { useBudgetScope } from "@/lib/budget-scope";
 import { Plus, Check, Loader2 } from "lucide-react";
@@ -21,21 +22,32 @@ export function QuickAddFloat() {
   const [category, setCategory] = useState<Category | "">("");
   const [member, setMember] = useState<Member | "">("");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
   const activeScope = canPersonal ? scope : "family";
 
   async function handleAdd() {
     if (!description || !amount || !category || !member) return;
+    setError(null);
     setSaved(true);
-    await supabase.from("entries").insert({
-      expense_at: new Date().toISOString(),
-      description,
-      category,
-      amount: parseFloat(amount),
-      member,
-      scope: activeScope,
-    });
+    const err = await mutate(
+      supabase.from("entries").insert({
+        expense_at: new Date().toISOString(),
+        description,
+        category,
+        amount: parseFloat(amount),
+        member,
+        scope: activeScope,
+      }),
+    );
+    // Never close, clear, or reload on a failed write — the entry exists nowhere
+    // else, so the user has to be able to retry with their input intact.
+    if (err) {
+      setSaved(false);
+      setError("No se pudo guardar el gasto. Intenta de nuevo.");
+      return;
+    }
     setTimeout(() => {
       setSaved(false);
       setOpen(false);
@@ -115,6 +127,11 @@ export function QuickAddFloat() {
               ))}
             </div>
           </div>
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+              {error}
+            </p>
+          )}
           <Button
             className="w-full bg-violet-600 hover:bg-violet-700 text-white"
             onClick={handleAdd}
