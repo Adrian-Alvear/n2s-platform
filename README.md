@@ -1,6 +1,8 @@
 # N2S Platform
 
-Personal family dashboard built with Next.js 16, deployed on Cloudflare Pages via OpenNext. The repo lives at `gitlab.com:n2s3/n2s-platform.git`. Pushing to `main` triggers an automatic Cloudflare deployment.
+Personal family dashboard built with Next.js 16, deployed on **Cloudflare Workers** via OpenNext. The repo lives at `gitlab.com:n2s3/n2s-platform.git`. Pushing to `main` triggers an automatic Cloudflare deployment.
+
+> **Workers, not Pages.** `wrangler.jsonc` sets `main`, `services`, and `assets` bindings — this is a Worker. The distinction matters: Pages does not support Cron Triggers and Workers does, so any scheduled work depends on it.
 
 ## Repo structure
 
@@ -42,7 +44,7 @@ git push origin main
 cd dashboard && npm run deploy
 ```
 
-Cloudflare is connected to the GitLab repo. Every push to `main` auto-deploys via OpenNext + Cloudflare Pages.
+Cloudflare is connected to the GitLab repo. Every push to `main` auto-deploys via OpenNext + Cloudflare Workers.
 
 ## npm scripts
 

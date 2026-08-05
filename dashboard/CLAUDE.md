@@ -4,14 +4,14 @@
 
 ## What this project is
 
-A personal family dashboard for Adrian, Javi, and Yazmi. It tracks household budget/spending and aggregates news. Built with Next.js 16 App Router, deployed to Cloudflare Pages via OpenNext. Auth is handled by Cloudflare Access (JWT in `cf-access-jwt-assertion` header). In local dev there is no auth — the `/api/me` route falls back to Adrian as admin.
+A personal family dashboard for Adrian, Javi, and Yazmi. It tracks household budget/spending and aggregates news. Built with Next.js 16 App Router, deployed to **Cloudflare Workers** via OpenNext. Auth is handled by Cloudflare Access (JWT in `cf-access-jwt-assertion` header). In local dev there is no auth — the `/api/me` route falls back to Adrian as admin.
 
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 16.2.6 (App Router, Turbopack) |
-| Deployment | Cloudflare Pages via `@opennextjs/cloudflare` |
+| Deployment | Cloudflare **Workers** via `@opennextjs/cloudflare` (see `wrangler.jsonc`) |
 | Database | Supabase (Postgres) |
 | Auth | Cloudflare Access (JWT) |
 | UI | Tailwind CSS v4 + shadcn/ui (Radix UI primitives) |
@@ -92,11 +92,13 @@ To add a member or category, update `lib/data.ts` — the rest of the UI derives
 - `app/api/soccer-scores/route.ts` — hits ESPN's unofficial public scoreboard API for today's matches across 6 leagues (World Cup, Champions League, Premier League, La Liga, Bundesliga, Serie A). Auto-refreshes every 60s on the client.
 - `app/api/ufc-events/route.ts` — hits ESPN's MMA scoreboard API for UFC events in the next 120 days.
 
-### RSS sources (as of June 2026)
-**AI**: Google News RSS per company (Anthropic, OpenAI, Google Gemini, Meta AI, Microsoft Copilot, Apple Intelligence, Tesla AI) + TechCrunch AI, The Verge AI, VentureBeat
+### RSS sources (as of August 2026)
+**AI**: Google News RSS per company (Anthropic/Claude, OpenAI, Kimi/Moonshot) + TechCrunch AI, The Verge AI, VentureBeat. Scoped deliberately — Gemini, Meta AI, Copilot, Apple Intelligence and Tesla AI feeds were removed because they were noise for this household. Add a company here only if someone actually wants it.
 **Soccer**: Google News World Cup, BBC Sport, The Guardian Football, Reddit r/worldcup+soccer, 90min, FourFourTwo
 **NBA**: Google News NBA, ESPN NBA, The Guardian NBA, Reddit r/nba, Bleacher Report
 **UFC**: Google News UFC, ESPN MMA, MMA Fighting, MMA Junkie, Reddit r/ufc
+**Colombia**: Google News (es-419), Caracol, RCN Radio, El Tiempo, Semana, El Espectador
+**NYT**: Google News `site:nytimes.com` searches — world, US politics, technology, business/economy, science/health
 
 ### Custom feeds (localStorage)
 Users can add custom tabs via the "+ Add" button. Two modes:

@@ -14,11 +14,7 @@ const FEEDS: Record<string, { url: string; source: string }[]> = {
     // Google News searches per company — free, no API key
     { url: "https://news.google.com/rss/search?q=Anthropic+Claude&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
     { url: "https://news.google.com/rss/search?q=OpenAI+ChatGPT+GPT&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
-    { url: "https://news.google.com/rss/search?q=Google+Gemini+AI+DeepMind&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
-    { url: "https://news.google.com/rss/search?q=Meta+AI+Llama+model&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
-    { url: "https://news.google.com/rss/search?q=Microsoft+Copilot+AI&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
-    { url: "https://news.google.com/rss/search?q=Apple+Intelligence+AI&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
-    { url: "https://news.google.com/rss/search?q=Tesla+AI+Optimus+robot&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
+    { url: "https://news.google.com/rss/search?q=Kimi+Moonshot+AI+model&hl=en-US&gl=US&ceid=US:en", source: "Google News" },
     // Image-rich sources to fill the grid
     { url: "https://techcrunch.com/category/artificial-intelligence/feed/", source: "TechCrunch" },
     { url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", source: "The Verge" },
