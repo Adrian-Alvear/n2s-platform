@@ -61,7 +61,7 @@ const FEEDS: Record<string, { url: string; source: string }[]> = {
   ],
 };
 
-function cleanText(raw: string): string {
+export function cleanText(raw: string): string {
   // Pass 1 — strip tags that are already in plain HTML
   let t = raw
     .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -90,7 +90,7 @@ function cleanText(raw: string): string {
     .trim();
 }
 
-function extractTag(xml: string, tag: string): string {
+export function extractTag(xml: string, tag: string): string {
   const cdata = xml.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, "i"));
   if (cdata) return cdata[1].trim();
   const plain = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i"));
@@ -98,7 +98,7 @@ function extractTag(xml: string, tag: string): string {
   return "";
 }
 
-function extractLink(xml: string): string {
+export function extractLink(xml: string): string {
   const atom = xml.match(/<link[^>]+href="([^"]+)"/i);
   if (atom) return atom[1];
   const fb = xml.match(/<feedburner:origLink>([^<]+)<\/feedburner:origLink>/i);
@@ -110,7 +110,7 @@ function extractLink(xml: string): string {
   return "";
 }
 
-function extractImage(xml: string): string {
+export function extractImage(xml: string): string {
   const media = xml.match(/<media:content[^>]+url="([^"]+)"/i);
   if (media) return media[1];
   const thumb = xml.match(/<media:thumbnail[^>]+url="([^"]+)"/i);
@@ -122,7 +122,7 @@ function extractImage(xml: string): string {
   return "";
 }
 
-function parseItems(xml: string, feedSource: string): NewsItem[] {
+export function parseItems(xml: string, feedSource: string): NewsItem[] {
   const items: NewsItem[] = [];
   const regex = /<item>([\s\S]*?)<\/item>/g;
   let m;
