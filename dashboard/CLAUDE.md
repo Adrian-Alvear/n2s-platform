@@ -124,6 +124,23 @@ Google News and some feeds use escaped HTML entities in descriptions (`&lt;a&gt;
 - Active apps: **Budget** (live), **News** (live)
 - Placeholder apps: **Chat** (Coming soon), **Notes** (Coming soon)
 
+## Build gotcha — esbuild must stay a direct devDependency
+
+`@opennextjs/cloudflare` imports `esbuild` at runtime (`dist/cli/build/bundle-server.js`)
+but declares it only as a **devDependency**, so it is never installed for consumers.
+It works purely by whatever esbuild some other package hoists to top level.
+
+Adding Vitest changed that hoist and broke the Cloudflare deploy with
+`ERR_MODULE_NOT_FOUND: Cannot find package 'esbuild'`. `esbuild` is now an explicit
+devDependency here to pin it at top level. **Do not remove it**, even though nothing
+in this codebase imports it directly.
+
+**Verify dependency changes with `npx opennextjs-cloudflare build`, not `npm run build`.**
+`npm run build` is `next build` and does not exercise the OpenNext bundler — it passes
+while the deploy fails. For anything touching the lockfile, verify against a clean
+install (`rm -rf node_modules && npm ci`), since a warm `node_modules` hides hoisting
+regressions.
+
 ## Known patterns / conventions
 
 - All pages that need client state use `"use client"` at the top.
