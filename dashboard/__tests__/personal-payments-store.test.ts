@@ -56,10 +56,18 @@ describe("getPayments", () => {
     expect(getPayments()).toEqual([1, 2, 3]);
   });
 
-  it("hands back the shared DEFAULT_PAYMENTS array itself, not a copy", () => {
-    // Quirk: callers that mutate the returned array edit the module-level
-    // defaults for every later caller in the same page session.
-    expect(getPayments()).toBe(DEFAULT_PAYMENTS);
+  it("hands back a copy of the defaults, not the shared array", () => {
+    // Regression guard: returning DEFAULT_PAYMENTS by reference let a caller
+    // mutating the result corrupt the defaults for every later caller in the
+    // session. The items are copied too, not just the array.
+    const first = getPayments();
+    expect(first).toEqual(DEFAULT_PAYMENTS);
+    expect(first).not.toBe(DEFAULT_PAYMENTS);
+
+    first[0].paid = true;
+    first[0].amount = 999;
+    expect(getPayments()).toEqual(DEFAULT_PAYMENTS);
+    expect(DEFAULT_PAYMENTS[0].paid).toBe(false);
   });
 });
 

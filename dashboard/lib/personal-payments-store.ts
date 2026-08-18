@@ -17,7 +17,9 @@ export function getPayments(): Payment[] {
   } catch {
     /* ignore */
   }
-  return DEFAULT_PAYMENTS;
+  // Copy, so a caller mutating the result can't corrupt the module-level
+  // defaults for every later caller in the session. Matches getAccounts().
+  return DEFAULT_PAYMENTS.map((p) => ({ ...p }));
 }
 
 export function savePayments(items: Payment[]) {
