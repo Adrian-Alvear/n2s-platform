@@ -30,7 +30,7 @@ describe("mutate", () => {
   });
 
   it("returns a generic message when a non-Error value is thrown", async () => {
-    await expect(mutate(Promise.reject("just a string"))).resolves.toBe("Something went wrong");
+    await expect(mutate(Promise.reject("just a string"))).resolves.toBe("Unknown database error");
   });
 
   it("accepts a thenable, which is what a Supabase query builder is", async () => {
@@ -55,11 +55,18 @@ describe("mutate", () => {
     expect(console.error).toHaveBeenCalledWith("[db] mutation threw:", "offline");
   });
 
-  it("returns an empty string — not null — for an error with a blank message", async () => {
-    // Quirk: the result is non-null (so the write did fail) but falsy, so a
-    // caller written as `if (msg) showError(msg)` silently treats it as success.
+  it("returns a truthy message for an error with a blank message", async () => {
+    // Regression guard: a blank message must not produce a falsy return value.
+    // Callers guard with `if (err)`, so "" would read as success and silently
+    // swallow a real write failure — the bug this module exists to prevent.
     const result = await mutate(Promise.resolve({ error: { message: "" } }));
-    expect(result).toBe("");
-    expect(result).not.toBeNull();
+    expect(result).toBeTruthy();
+    expect(result).toBe("Unknown database error");
+  });
+
+  it("returns a truthy message when a thrown error has a blank message", async () => {
+    const result = await mutate(Promise.reject(new Error("")));
+    expect(result).toBeTruthy();
+    expect(result).toBe("Unknown database error");
   });
 });
