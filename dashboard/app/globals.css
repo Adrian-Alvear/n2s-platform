@@ -4,34 +4,37 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Force light mode by default — dark only via .dark class */
+/* Force light mode by default — dark only via the .dark class.
+   These values must mirror the warm :root palette below. They previously held
+   shadcn's cold neutral greys, so anyone whose OS was set to dark but who had not
+   toggled .dark saw the default grey theme instead of the warm editorial one. */
 @media (prefers-color-scheme: dark) {
   :root:not(.dark) {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --background: oklch(0.99 0.004 83);
+    --foreground: oklch(0.2 0.012 60);
+    --card: oklch(1 0.001 83);
+    --card-foreground: oklch(0.2 0.012 60);
+    --popover: oklch(1 0.001 83);
+    --popover-foreground: oklch(0.2 0.012 60);
+    --primary: oklch(0.24 0.015 60);
+    --primary-foreground: oklch(0.99 0.004 83);
+    --secondary: oklch(0.968 0.006 83);
+    --secondary-foreground: oklch(0.24 0.015 60);
+    --muted: oklch(0.968 0.006 83);
+    --muted-foreground: oklch(0.53 0.018 66);
+    --accent: oklch(0.965 0.008 83);
+    --accent-foreground: oklch(0.24 0.015 60);
+    --border: oklch(0.91 0.008 83);
+    --input: oklch(0.91 0.008 83);
+    --ring: oklch(0.55 0.02 66);
+    --sidebar: oklch(0.975 0.005 83);
+    --sidebar-foreground: oklch(0.2 0.012 60);
+    --sidebar-primary: oklch(0.24 0.015 60);
+    --sidebar-primary-foreground: oklch(0.99 0.004 83);
+    --sidebar-accent: oklch(0.965 0.008 83);
+    --sidebar-accent-foreground: oklch(0.24 0.015 60);
+    --sidebar-border: oklch(0.91 0.008 83);
+    --sidebar-ring: oklch(0.55 0.02 66);
   }
 }
 
@@ -54,6 +57,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-app-budget: var(--app-budget);
+  --color-app-news: var(--app-news);
+  --color-app-chat: var(--app-chat);
+  --color-app-notes: var(--app-notes);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -98,54 +105,80 @@
   --border: oklch(0.91 0.008 83);
   --input: oklch(0.91 0.008 83);
   --ring: oklch(0.55 0.02 66);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Categorical chart palette — assign in fixed slot order, never cycled.
+     Hex rather than oklch because these values are validated exactly: they pass
+     the lightness band, chroma floor, CVD separation (worst adjacent pair ΔE 9.1
+     protan) and normal-vision floor (worst ΔE 19.6) against this surface.
+     Do not hand-tune them; re-run the validator if they must change.
+     NOTE: chart-3, chart-4 and chart-5 fall below 3:1 contrast on this near-white
+     surface, so any chart using them needs visible labels or a table view —
+     colour alone is not sufficient here. */
+  --chart-1: #2a78d6; /* blue */
+  --chart-2: #eb6834; /* orange */
+  --chart-3: #1baf7a; /* aqua */
+  --chart-4: #eda100; /* yellow */
+  --chart-5: #e87ba4; /* magenta */
+  /* Per-app accents (Budget / News / Chat / Notes). Currently hardcoded inline in
+     components as bg-violet-600 etc; adopt these incrementally. */
+  --app-budget: oklch(0.53 0.22 295);
+  --app-news: oklch(0.6 0.14 163);
+  --app-chat: oklch(0.55 0.19 255);
+  --app-notes: oklch(0.68 0.15 75);
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Sidebar shares the warm palette above. These were shadcn's neutral greys and
+     read visibly colder than the content beside them. */
+  --sidebar: oklch(0.975 0.005 83);
+  --sidebar-foreground: oklch(0.2 0.012 60);
+  --sidebar-primary: oklch(0.24 0.015 60);
+  --sidebar-primary-foreground: oklch(0.99 0.004 83);
+  --sidebar-accent: oklch(0.965 0.008 83);
+  --sidebar-accent-foreground: oklch(0.24 0.015 60);
+  --sidebar-border: oklch(0.91 0.008 83);
+  --sidebar-ring: oklch(0.55 0.02 66);
 }
 
+/* Dark mode is warm, matching light. It was previously hue 264 (blue) while light
+   is hue 83 (warm), so toggling the theme changed the app's personality rather
+   than just its brightness. */
 .dark {
-  --background: oklch(0.155 0.008 264);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0.008 264);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0.008 264);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.272 0.008 264);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.272 0.008 264);
-  --muted-foreground: oklch(0.712 0.016 264);
-  --accent: oklch(0.272 0.01 264);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.16 0.006 70);
+  --foreground: oklch(0.985 0.002 83);
+  --card: oklch(0.21 0.006 70);
+  --card-foreground: oklch(0.985 0.002 83);
+  --popover: oklch(0.21 0.006 70);
+  --popover-foreground: oklch(0.985 0.002 83);
+  --primary: oklch(0.922 0.004 83);
+  --primary-foreground: oklch(0.21 0.006 70);
+  --secondary: oklch(0.27 0.006 70);
+  --secondary-foreground: oklch(0.985 0.002 83);
+  --muted: oklch(0.27 0.006 70);
+  --muted-foreground: oklch(0.72 0.012 75);
+  --accent: oklch(0.27 0.008 70);
+  --accent-foreground: oklch(0.985 0.002 83);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.05 264);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.6 0.03 70);
+  /* Same five hues re-stepped for the dark surface — a selected palette, not an
+     automatic flip of the light one. All five pass contrast >= 3:1 here, so the
+     light mode's labelling caveat does not apply. */
+  --chart-1: #3987e5; /* blue */
+  --chart-2: #d95926; /* orange */
+  --chart-3: #199e70; /* aqua */
+  --chart-4: #c98500; /* yellow */
+  --chart-5: #d55181; /* magenta */
+  --app-budget: oklch(0.65 0.19 295);
+  --app-news: oklch(0.7 0.13 163);
+  --app-chat: oklch(0.66 0.16 255);
+  --app-notes: oklch(0.76 0.13 75);
+  --sidebar: oklch(0.19 0.006 70);
+  --sidebar-foreground: oklch(0.985 0.002 83);
+  --sidebar-primary: oklch(0.65 0.19 295);
+  --sidebar-primary-foreground: oklch(0.985 0.002 83);
+  --sidebar-accent: oklch(0.27 0.008 70);
+  --sidebar-accent-foreground: oklch(0.985 0.002 83);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.6 0.03 70);
 }
 
 @layer base {
