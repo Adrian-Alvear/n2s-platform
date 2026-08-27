@@ -7,6 +7,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useUser } from "@/lib/user-context";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Wallet, MessageSquare, Newspaper, Shield,
   Sun, Moon, ChevronLeft, ChevronRight, Menu,
@@ -20,7 +21,7 @@ const budgetSub = [
 ];
 
 function NavItem({ href, label, icon: Icon, collapsed, onClick, active }: {
-  href: string; label: string; icon: React.ElementType;
+  href: string; label: string; icon: LucideIcon;
   collapsed?: boolean; onClick?: () => void; active: boolean;
 }) {
   return (
