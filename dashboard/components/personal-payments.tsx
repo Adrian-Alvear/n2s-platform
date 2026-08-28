@@ -50,7 +50,7 @@ export function PersonalPayments() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Monthly payments</h2>
+        <h2 className="text-base font-semibold text-foreground">Monthly payments</h2>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => setAdding((a) => !a)}>
           <Plus size={13} /> Add
         </Button>

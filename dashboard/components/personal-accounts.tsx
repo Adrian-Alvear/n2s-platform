@@ -48,7 +48,7 @@ export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => voi
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">My accounts</h2>
+        <h2 className="text-base font-semibold text-foreground">My accounts</h2>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={openEdit}>
           <Pencil size={12} /> Edit
         </Button>

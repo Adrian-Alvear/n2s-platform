@@ -13,12 +13,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
 };
 
-function barColor(pct: number, over: boolean) {
-  if (over) return "bg-red-500";
-  if (pct >= 90) return "bg-orange-500";
-  if (pct >= 70) return "bg-yellow-500";
-  return "bg-emerald-500";
-}
 
 export function CategoryEnvelopes({
   limits, spentByCategory, income, onSave, onReset,
@@ -50,7 +44,7 @@ export function CategoryEnvelopes({
     <div>
       {/* Header + adjust controls */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Categorías</h2>
+        <h2 className="text-base font-semibold text-foreground">Categorías</h2>
         {!adjusting ? (
           <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-violet-600" onClick={startAdjust}>
             <Sliders size={13} /> Reasignar
@@ -92,18 +86,20 @@ export function CategoryEnvelopes({
             const over = spent > limit;
             const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : (spent > 0 ? 100 : 0);
             return (
-              <div key={cat} className="px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0">{CATEGORY_ICONS[cat]}</div>
+              <div key={cat} className="px-4 md:px-6 py-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg shrink-0">{CATEGORY_ICONS[cat]}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium truncate">{cat}</span>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-medium text-foreground truncate">{cat}</span>
                       {!adjusting && (
-                        <span className="text-xs tabular-nums shrink-0">
-                          <span className="text-muted-foreground">${spent.toFixed(0)}</span>
-                          <span className="text-muted-foreground/50"> / </span>
-                          <span className="font-medium">${limit.toFixed(0)}</span>
-                        </span>
+                        over ? (
+                          <span className="text-xs tabular-nums shrink-0 text-destructive font-medium">Sobre ${(spent - limit).toFixed(0)}</span>
+                        ) : (
+                          <span className="text-xs tabular-nums shrink-0 text-muted-foreground">
+                            Restan <span className="font-medium text-foreground">${left.toFixed(0)}</span>
+                          </span>
+                        )
                       )}
                     </div>
 
@@ -126,16 +122,20 @@ export function CategoryEnvelopes({
                       </div>
                     ) : (
                       <>
+                        {/* Spent-against-limit read directly under the name, with
+                            the share repeated as text so the rail's fill is never
+                            the only thing carrying the number. */}
+                        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                          ${spent.toFixed(0)} / Límite ${limit.toFixed(0)} · {pct.toFixed(0)}%
+                        </p>
                         <div className="h-1.5 rounded-full bg-muted mt-2 overflow-hidden">
-                          <div className={`h-1.5 rounded-full transition-all ${barColor(pct, over)}`} style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-[11px] text-muted-foreground">Límite ${limit.toFixed(0)}</span>
-                          {over ? (
-                            <span className="text-[11px] font-medium text-red-500 tabular-nums">Sobre ${(spent - limit).toFixed(0)}</span>
-                          ) : (
-                            <span className="text-[11px] font-medium text-emerald-600 tabular-nums">Restan ${left.toFixed(0)}</span>
-                          )}
+                          <div
+                            className="h-full rounded-full transition-[width] duration-500"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: over ? "var(--destructive)" : "var(--app-budget)",
+                            }}
+                          />
                         </div>
                       </>
                     )}

@@ -58,7 +58,7 @@ export function PersonalTips({
 
   return (
     <div>
-      <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">AI suggestions</h2>
+      <h2 className="text-base font-semibold mb-3 text-foreground">AI suggestions</h2>
       <Card>
         <CardContent className="p-4">
           {!done ? (

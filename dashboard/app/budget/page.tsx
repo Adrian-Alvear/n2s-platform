@@ -204,7 +204,7 @@ export default function BudgetOverview() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{L.recent}</h2>
+              <h2 className="text-base font-semibold text-foreground">{L.recent}</h2>
               <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-violet-600" onClick={() => setSheetOpen(true)}>
                 {L.viewAll} <ArrowRight size={13} />
               </Button>
@@ -264,8 +264,8 @@ export default function BudgetOverview() {
             </>
           ) : (
             <Card>
-              <CardContent className="p-4 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Por persona</p>
+              <CardContent className="p-5 space-y-4">
+                <p className="text-base font-semibold text-foreground">Por persona</p>
                 {(() => {
                   // Three named people = a categorical job, so bars take chart slots
                   // 1-3 in fixed MEMBERS order. Each bar is directly labelled with
