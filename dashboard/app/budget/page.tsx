@@ -82,6 +82,9 @@ export default function BudgetOverview() {
   );
   const totalSpent = Object.values(spentByCategory).reduce((s, v) => s + v, 0);
   const saldo = totalIncome - totalBudget;
+  // Share of the month's budget already spent — drives the hero's violet rail.
+  const overBudget = totalSpent > totalBudget;
+  const usedPct = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
 
   // Personal dashboard is in English; family stays in Spanish
   const isP = activeScope === "personal";
@@ -119,24 +122,64 @@ export default function BudgetOverview() {
         </div>
       )}
 
-      <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-violet-800 text-white p-5 md:p-8 shadow-lg">
-        <div className="flex items-start justify-between mb-5 md:mb-6 gap-4">
-          <div>
-            <p className="text-violet-200 text-sm font-medium mb-1">{L.saved}</p>
-            <p className="text-4xl md:text-5xl font-bold tracking-tight">${saldo.toFixed(2)}</p>
-            <p className="text-violet-300/80 text-xs mt-1">{L.savedSub}</p>
+      {/* Hero balance — one large figure on a card that sits a step lighter than
+          the page. Violet is the accent only: it fills the budget-usage rail and
+          nothing else here, so the number itself stays plain high-contrast. */}
+      <section className="rounded-2xl bg-card ring-1 ring-border p-6 md:p-8">
+        {/* Stacks on mobile so the hero figure always gets the full card width —
+            side by side it collided with the month pill at this type size. */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-muted-foreground">{L.saved}</p>
+            <p className="mt-2 text-5xl md:text-6xl font-semibold tracking-tight tabular-nums text-foreground">
+              ${saldo.toFixed(2)}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">{L.savedSub}</p>
           </div>
-          <div className="bg-white/10 rounded-xl px-3 py-1.5 shrink-0">
+          <div className="shrink-0 self-start rounded-full bg-muted px-1 py-0.5">
             <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
           </div>
         </div>
-        <div className="grid grid-cols-2 md:flex md:gap-6 gap-3 text-sm">
-          <div><p className="text-violet-300">{L.income}</p><p className="font-semibold text-base md:text-lg">${totalIncome.toLocaleString()}</p></div>
-          <div><p className="text-violet-300">{L.budget}</p><p className="font-semibold text-base md:text-lg">${totalBudget.toFixed(0)}</p></div>
-          <div><p className="text-violet-300">{L.spent}</p><p className={`font-semibold text-base md:text-lg ${totalSpent > totalBudget ? "text-red-300" : ""}`}>${totalSpent.toFixed(0)}</p></div>
-          <div><p className="text-violet-300">{L.remaining}</p><p className={`font-semibold text-base md:text-lg ${(totalBudget - totalSpent) < 0 ? "text-red-300" : "text-emerald-300"}`}>${(totalBudget - totalSpent).toFixed(0)}</p></div>
+
+        {/* Budget usage, directly labelled — the rail carries no meaning colour
+            alone, the figures beside it repeat it. */}
+        <div className="mt-7 md:mt-9 space-y-2">
+          <div className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="text-muted-foreground">{L.spent} / {L.budget}</span>
+            <span className={`tabular-nums font-medium ${overBudget ? "text-destructive" : "text-muted-foreground"}`}>
+              {usedPct.toFixed(0)}%
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full transition-[width] duration-500"
+              style={{
+                width: `${usedPct}%`,
+                backgroundColor: overBudget ? "var(--destructive)" : "var(--app-budget)",
+              }}
+            />
+          </div>
         </div>
-      </div>
+
+        <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-6 md:grid-cols-4">
+          <div>
+            <p className="text-xs text-muted-foreground">{L.income}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">${totalIncome.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{L.budget}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums">${totalBudget.toFixed(0)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{L.spent}</p>
+            <p className={`mt-1 text-xl font-semibold tabular-nums ${overBudget ? "text-destructive" : ""}`}>${totalSpent.toFixed(0)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{L.remaining}</p>
+            <p className={`mt-1 text-xl font-semibold tabular-nums ${(totalBudget - totalSpent) < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>${(totalBudget - totalSpent).toFixed(0)}</p>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
