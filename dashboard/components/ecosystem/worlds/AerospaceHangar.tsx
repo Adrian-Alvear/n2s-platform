@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { Wire } from "../Wire";
-import { CYAN } from "../config";
+import { SILVER, SUNGOLD } from "../config";
 
 /**
  * Aerospace micro-world: a launch complex with a rocket that periodically
@@ -39,7 +39,7 @@ export default function AerospaceHangar() {
       {/* Ground plane as a wireframe grid — the hangar floor. */}
       <lineSegments rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
         <wireframeGeometry args={[grid]} />
-        <lineBasicMaterial color={CYAN} toneMapped={false} transparent opacity={0.18} />
+        <lineBasicMaterial color={SILVER} toneMapped={false} transparent opacity={0.18} />
       </lineSegments>
 
       <Wire geometry={pad} position={[0, 0, 0]} intensity={1.6} />
@@ -60,13 +60,13 @@ export default function AerospaceHangar() {
         ))}
         <group ref={exhaust} position={[0, -0.6, 0]}>
           <mesh rotation={[Math.PI, 0, 0]} geometry={plume}>
-            <meshBasicMaterial color="#67e8f9" toneMapped={false} transparent opacity={0.55} />
+            <meshBasicMaterial color={SUNGOLD} toneMapped={false} transparent opacity={0.55} />
           </mesh>
         </group>
       </group>
 
       <Html position={[0, 8.5, 0]} center distanceFactor={18} style={{ pointerEvents: "none" }}>
-        <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.3em] text-cyan-300">
+        <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.3em] text-zinc-300 font-light">
           Aerospace Hangar
         </span>
       </Html>

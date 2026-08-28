@@ -8,7 +8,8 @@ import { DIVE_SECONDS } from "./config";
 
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-export const HOME = new THREE.Vector3(0, 5.5, 13);
+// ~13deg above the ecliptic - the near-edge-on angle of an orrery plate.
+export const HOME = new THREE.Vector3(0, 3.6, 16);
 
 /**
  * Drives the portal dive. The camera accelerates toward the node's LIVE

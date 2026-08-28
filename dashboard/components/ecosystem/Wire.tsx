@@ -13,8 +13,8 @@ import * as THREE from "three";
  */
 export function Wire({
   geometry,
-  color = "#22d3ee",
-  intensity = 2.2,
+  color = "#d6dbe4",
+  intensity = 1.5,
   ...props
 }: {
   geometry: THREE.BufferGeometry;

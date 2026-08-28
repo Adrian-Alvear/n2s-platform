@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { Wire } from "../Wire";
-import { CYAN } from "../config";
+import { SILVER, SUNGOLD } from "../config";
 
 /** Financial micro-world: a vault floor of budget "columns" that breathe. */
 export default function FinancialHub() {
@@ -31,7 +31,7 @@ export default function FinancialHub() {
 
       <lineSegments rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <wireframeGeometry args={[grid]} />
-        <lineBasicMaterial color={CYAN} toneMapped={false} transparent opacity={0.18} />
+        <lineBasicMaterial color={SILVER} toneMapped={false} transparent opacity={0.18} />
       </lineSegments>
 
       <group ref={bars}>
@@ -48,7 +48,7 @@ export default function FinancialHub() {
       <Wire geometry={coin} position={[0, 7, -4]} rotation={[Math.PI / 2.2, 0, 0]} intensity={3.2} />
 
       <Html position={[0, 9.5, 0]} center distanceFactor={18} style={{ pointerEvents: "none" }}>
-        <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.3em] text-cyan-300">
+        <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.3em] text-zinc-300 font-light">
           Financial Hub
         </span>
       </Html>
