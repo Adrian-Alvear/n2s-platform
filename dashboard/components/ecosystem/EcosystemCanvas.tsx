@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
@@ -20,6 +20,20 @@ function MicroWorld() {
   if (active === "financial") return <FinancialHub />;
   const label = NODES.find((n) => n.id === active)?.label ?? "Module";
   return <Placeholder label={label} />;
+}
+
+function TodayReadout() {
+  const [today, setToday] = useState(() => new Date());
+  useEffect(() => {
+    // Refresh once a minute so the date stays correct across midnight.
+    const t = setInterval(() => setToday(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <p className="pointer-events-none fixed right-6 top-6 text-right text-[11px] font-light uppercase tracking-[0.3em] text-zinc-300/70">
+      {today.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+    </p>
+  );
 }
 
 export default function EcosystemCanvas() {
@@ -85,6 +99,8 @@ export default function EcosystemCanvas() {
           ← Warp out
         </button>
       )}
+
+      {mode === "macro" && <TodayReadout />}
 
       {mode === "macro" && (
         <p className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-light uppercase tracking-[0.35em] text-zinc-400/50">
