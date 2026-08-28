@@ -99,6 +99,11 @@ export default function BudgetOverview() {
     viewAll: isP ? "View all" : "Ver todos",
     empty: isP ? "No transactions this month" : "No hay movimientos este mes",
     loading: isP ? "Loading..." : "Cargando...",
+    colName: isP ? "Name" : "Descripción",
+    colAmount: isP ? "Amount" : "Monto",
+    colCategory: isP ? "Category" : "Categoría",
+    colWho: isP ? "Who" : "Quién",
+    colDate: isP ? "Date" : "Fecha",
   };
 
   return (
@@ -204,25 +209,45 @@ export default function BudgetOverview() {
                 {L.viewAll} <ArrowRight size={13} />
               </Button>
             </div>
+            {/* Transactions read as a real table: muted grey column headings over
+                high-contrast rows, the member as a status pill, and secondary
+                detail (category, date) demoted to grey columns. Narrow screens
+                drop those columns and fold the date under the description. */}
             <Card>
-              <CardContent className="p-0 divide-y divide-border">
+              <CardContent className="p-0">
                 {loading && <div className="flex items-center justify-center py-10 text-muted-foreground"><Loader2 className="animate-spin mr-2" size={16} /> {L.loading}</div>}
                 {!loading && entries.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">{L.empty}</div>}
-                {entries.slice(0, 8).map((e) => (
-                  <div key={e.id} className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900 flex items-center justify-center text-lg shrink-0">{CATEGORY_ICONS[e.category]}</div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{e.description}</p>
-                        <p className="text-xs text-muted-foreground truncate">{e.category} · {formatDateTime(e.expense_at)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className={`hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span>
-                      <span className="text-sm font-bold text-red-500">-${e.amount.toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
+                {!loading && entries.length > 0 && (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="w-full px-4 md:px-6 py-3 text-left text-xs font-normal text-muted-foreground">{L.colName}</th>
+                        <th className="px-3 py-3 text-right text-xs font-normal text-muted-foreground">{L.colAmount}</th>
+                        <th className="hidden md:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">{L.colCategory}</th>
+                        <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">{L.colWho}</th>
+                        <th className="hidden md:table-cell px-4 md:px-6 py-3 text-right text-xs font-normal text-muted-foreground">{L.colDate}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entries.slice(0, 8).map((e) => (
+                        <tr key={e.id} className="border-b border-border/50 last:border-b-0">
+                          <td className="px-4 md:px-6 py-3.5 max-w-0">
+                            <p className="truncate font-medium text-foreground">{e.description}</p>
+                            <p className="md:hidden truncate text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
+                          </td>
+                          <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
+                          <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
+                            <span className="mr-1.5">{CATEGORY_ICONS[e.category]}</span>{e.category}
+                          </td>
+                          <td className="hidden sm:table-cell px-3 py-3.5">
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
+                          </td>
+                          <td className="hidden md:table-cell px-4 md:px-6 py-3.5 text-right text-muted-foreground tabular-nums whitespace-nowrap">{formatDateTime(e.expense_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </CardContent>
             </Card>
           </div>
