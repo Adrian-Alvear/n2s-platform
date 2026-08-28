@@ -198,15 +198,42 @@ export default function BudgetOverview() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Por persona</p>
-                {MEMBERS.map((m) => {
-                  const spent = entries.filter((e) => e.member === m).reduce((s, e) => s + e.amount, 0);
-                  return (
-                    <div key={m} className="flex items-center justify-between">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[m]}`}>{m}</span>
-                      <span className="text-sm font-semibold">${spent.toFixed(2)}</span>
+                {(() => {
+                  // Three named people = a categorical job, so bars take chart slots
+                  // 1-3 in fixed MEMBERS order. Each bar is directly labelled with
+                  // the name, so identity is never carried by colour alone and no
+                  // legend is needed. Bars are scaled against the highest spender,
+                  // which makes the comparison relative rather than absolute.
+                  const spendByMember = MEMBERS.map((m) => ({
+                    member: m,
+                    spent: entries
+                      .filter((e) => e.member === m)
+                      .reduce((s, e) => s + e.amount, 0),
+                  }));
+                  const peak = Math.max(...spendByMember.map((d) => d.spent), 0);
+                  const slots = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)"];
+
+                  return spendByMember.map((d, i) => (
+                    <div key={d.member} className="space-y-1.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-medium text-foreground">{d.member}</span>
+                        <span className="text-sm font-semibold tabular-nums">
+                          ${d.spent.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-[width] duration-500"
+                          style={{
+                            // peak is 0 before any spending exists — avoid 0/0.
+                            width: peak > 0 ? `${(d.spent / peak) * 100}%` : "0%",
+                            backgroundColor: slots[i],
+                          }}
+                        />
+                      </div>
                     </div>
-                  );
-                })}
+                  ));
+                })()}
               </CardContent>
             </Card>
           )}
