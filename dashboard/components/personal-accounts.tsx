@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pencil } from "lucide-react";
 import { getAccounts, saveAccounts, type Accounts } from "@/lib/personal-accounts";
+import { MemberAvatar } from "@/components/member-avatar";
+import { useUser } from "@/lib/user-context";
 
 export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => void }) {
+  const { user } = useUser();
   const [accounts, setAccounts] = useState<Accounts>({ checking: 0, savings: 0, credit: 0 });
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({ checking: "", savings: "", credit: "" });
@@ -48,7 +51,12 @@ export function PersonalAccounts({ onChange }: { onChange?: (a: Accounts) => voi
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-foreground">My accounts</h2>
+        {/* These balances belong to one person, so the panel is headed by their
+            monogram the way the reference heads its transfer panel with a face. */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {user?.name && <MemberAvatar name={user.name} size="sm" />}
+          <h2 className="text-base font-semibold text-foreground">My accounts</h2>
+        </div>
         <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={openEdit}>
           <Pencil size={12} /> Edit
         </Button>

@@ -14,6 +14,7 @@ import { PersonalAccounts } from "@/components/personal-accounts";
 import { PersonalPayments } from "@/components/personal-payments";
 import { CategoryEnvelopes } from "@/components/category-envelopes";
 import { ActivityChart } from "@/components/activity-chart";
+import { MemberAvatar } from "@/components/member-avatar";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
 import { Loader2, ArrowRight, Users, User } from "lucide-react";
@@ -304,22 +305,27 @@ export default function BudgetOverview() {
                   const slots = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)"];
 
                   return spendByMember.map((d, i) => (
-                    <div key={d.member} className="space-y-1.5">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="text-xs font-medium text-foreground">{d.member}</span>
-                        <span className="text-sm font-semibold tabular-nums">
-                          ${d.spent.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-[width] duration-500"
-                          style={{
-                            // peak is 0 before any spending exists — avoid 0/0.
-                            width: peak > 0 ? `${(d.spent / peak) * 100}%` : "0%",
-                            backgroundColor: slots[i],
-                          }}
-                        />
+                    // Monogram disc first, as the reference leads its transfer
+                    // rows with a face; the written name stays beside it.
+                    <div key={d.member} className="flex items-center gap-3">
+                      <MemberAvatar name={d.member} />
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-xs font-medium text-foreground">{d.member}</span>
+                          <span className="text-sm font-semibold tabular-nums">
+                            ${d.spent.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-[width] duration-500"
+                            style={{
+                              // peak is 0 before any spending exists — avoid 0/0.
+                              width: peak > 0 ? `${(d.spent / peak) * 100}%` : "0%",
+                              backgroundColor: slots[i],
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   ));
