@@ -192,3 +192,29 @@
     @apply font-sans;
   }
 }
+
+/* Staggered entrance for cards that arrive as a group — the budget signal
+   band uses it with a per-tile animation-delay so the row assembles rather
+   than snapping in. Opt-in class: nothing animates unless it asks to, and
+   `both` holds the from-state through the delay so no tile flashes first.
+   Fully disabled when the viewer has asked for reduced motion. */
+@keyframes n2s-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.n2s-rise {
+  animation: n2s-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .n2s-rise {
+    animation: none;
+  }
+}

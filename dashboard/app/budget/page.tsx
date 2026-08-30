@@ -16,6 +16,8 @@ import { CategoryEnvelopes } from "@/components/category-envelopes";
 import { ActivityChart } from "@/components/activity-chart";
 import { SavingsGoals } from "@/components/savings-goals";
 import { MemberAvatar } from "@/components/member-avatar";
+import { BudgetInsights } from "@/components/budget-insights";
+import { splitByMonth } from "@/lib/budget-analytics";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
 import { Loader2, ArrowRight, Users, User } from "lucide-react";
@@ -41,9 +43,15 @@ export default function BudgetOverview() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [entries, setEntries] = useState<Entry[]>([]);
+  // The month before the selected one, kept only so the signal band can say
+  // what moved. Never rendered as a list.
+  const [prevEntries, setPrevEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [accounts, setAccounts] = useState<Accounts>({ checking: 0, savings: 0, credit: 0 });
+  // Stable clock for the derived signals. A fresh Date on every render would
+  // invalidate their memo constantly and make the pace maths drift mid-session.
+  const [clock] = useState(() => new Date());
 
   // Personal budget is only for Adrian; force family for everyone else
   const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
@@ -71,13 +79,21 @@ export default function BudgetOverview() {
 
   useEffect(() => {
     setLoading(true);
-    const from = new Date(year, month, 1).toISOString();
+    // Two months in one read: the selected month drives everything on screen,
+    // the one before it only feeds the month-over-month signal. Splitting the
+    // result client-side keeps this to a single round trip.
+    const from = new Date(year, month - 1, 1).toISOString();
     const to = new Date(year, month + 1, 1).toISOString();
     supabase.from("entries").select("*")
       .eq("scope", activeScope)
       .gte("expense_at", from).lt("expense_at", to)
       .order("expense_at", { ascending: false })
-      .then(({ data }) => { setEntries(data ?? []); setLoading(false); });
+      .then(({ data }) => {
+        const { current, previous } = splitByMonth((data ?? []) as Entry[], year, month);
+        setEntries(current);
+        setPrevEntries(previous);
+        setLoading(false);
+      });
   }, [year, month, activeScope]);
 
   const spentByCategory = Object.fromEntries(
@@ -239,6 +255,21 @@ export default function BudgetOverview() {
         />
       </div>
       </div>
+
+      {/* Derived signals, computed from the rows already on this page: what the
+          month is on pace to spend, which envelope is about to blow, the
+          biggest change against last month, and who drove it. */}
+      <BudgetInsights
+        scope={activeScope}
+        loading={loading}
+        entries={entries}
+        previousEntries={prevEntries}
+        limits={budgets}
+        totalBudget={totalBudget}
+        year={year}
+        month={month}
+        now={clock}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
