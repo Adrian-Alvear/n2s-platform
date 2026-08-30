@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
@@ -17,6 +16,12 @@ import { MonthNav } from "@/components/month-nav";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
+
+const CATEGORY_ICONS: Record<string, string> = {
+  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
+  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
+  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
+};
 
 function formatDateTime(ts: string) {
   const d = new Date(ts);
@@ -154,14 +159,16 @@ export default function Spending() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Gastos</h1>
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+            <p className="text-sm text-destructive" role="alert">{error}</p>
           )}
           <p className="text-muted-foreground text-sm mt-1">Registra y revisa todos los gastos</p>
         </div>
         <div className="flex items-center gap-3">
-          <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
+          <div className="rounded-full bg-muted px-1 py-0.5">
+            <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
+          </div>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"><Plus size={15} /> Agregar</Button>
@@ -193,7 +200,7 @@ export default function Spending() {
           <Button variant="ghost" size="sm" onClick={() => { setFilterMember("all"); setFilterCategory("all"); }}>Limpiar</Button>
         )}
         <span className="ml-auto text-sm text-muted-foreground">
-          {filtered.length} registros · <span className="font-semibold text-foreground">${total.toFixed(2)}</span>
+          {filtered.length} registros · <span className="font-semibold text-foreground tabular-nums">${total.toFixed(2)}</span>
         </span>
       </div>
 
@@ -204,39 +211,65 @@ export default function Spending() {
         </DialogContent>
       </Dialog>
 
+      {/* Entries table — the same shape as the budget page's "Últimos
+          movimientos" card and the spending sheet: muted grey column headings,
+          a high-contrast truncating description, the amount as a plain neutral
+          figure, the member as a status pill, and secondary detail (category,
+          date) demoted to grey columns. Narrow screens drop those columns and
+          fold category + date under the description. Row actions get their own
+          trailing column. */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha y hora</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="hidden sm:table-cell">Categoría</TableHead>
-                <TableHead className="hidden sm:table-cell">Persona</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground"><Loader2 className="animate-spin inline mr-2" size={16} />Cargando...</TableCell></TableRow>}
-              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">No hay gastos este mes</TableCell></TableRow>}
-              {filtered.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">{formatDateTime(e.expense_at)}</TableCell>
-                  <TableCell className="font-medium">{e.description}</TableCell>
-                  <TableCell className="hidden sm:table-cell"><span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{e.category}</span></TableCell>
-                  <TableCell className="hidden sm:table-cell"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as Member] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span></TableCell>
-                  <TableCell className="text-right font-semibold">${e.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}><Pencil size={13} /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}><Trash2 size={13} /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="p-0">
+          {loading && (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <Loader2 className="animate-spin mr-2" size={16} /> Cargando...
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground text-sm">No hay gastos este mes</div>
+          )}
+          {!loading && filtered.length > 0 && (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="w-full px-4 md:px-6 py-3 text-left text-xs font-normal text-muted-foreground">Descripción</th>
+                  <th className="px-3 py-3 text-right text-xs font-normal text-muted-foreground">Monto</th>
+                  <th className="hidden md:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">Categoría</th>
+                  <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">Persona</th>
+                  <th className="hidden md:table-cell px-3 py-3 text-right text-xs font-normal text-muted-foreground">Fecha</th>
+                  <th className="px-4 md:px-6 py-3"><span className="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((e) => (
+                  <tr key={e.id} className="border-b border-border/50 last:border-b-0 hover:bg-muted/40 transition-colors">
+                    <td className="px-4 md:px-6 py-3.5 max-w-0">
+                      <p className="truncate font-medium text-foreground">{e.description}</p>
+                      <p className="md:hidden truncate text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
+                    </td>
+                    <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
+                    <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
+                      <span className="mr-1.5">{CATEGORY_ICONS[e.category] ?? "📦"}</span>{e.category}
+                    </td>
+                    <td className="hidden sm:table-cell px-3 py-3.5">
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as Member] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
+                    </td>
+                    <td className="hidden md:table-cell px-3 py-3.5 text-right text-muted-foreground tabular-nums whitespace-nowrap">{formatDateTime(e.expense_at)}</td>
+                    <td className="px-4 md:px-6 py-3.5">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}>
+                          <Pencil size={12} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}>
+                          <Trash2 size={12} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </CardContent>
       </Card>
     </div>
