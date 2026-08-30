@@ -19,12 +19,15 @@ export function ActivityChart({
   scope,
   year,
   month,
+  monthlyIncome,
   labels,
 }: {
   scope: "family" | "personal";
   year: number;
   month: number;
-  labels: { title: string; empty: string; loading: string; spent: string };
+  /** Flat monthly figure from INCOME/PERSONAL_INCOME — drawn as the paired series. */
+  monthlyIncome: number;
+  labels: { title: string; empty: string; loading: string; spent: string; income: string };
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,7 @@ export function ActivityChart({
         // Single letter, as in the reference's dense monthly axis.
         label: d.toLocaleDateString("en", { month: "narrow" }),
         full: d.toLocaleDateString("en", { month: "long", year: "numeric" }),
+        income: monthlyIncome,
         spent: 0,
       };
     });
@@ -65,13 +69,25 @@ export function ActivityChart({
       if (i !== undefined) buckets[i].spent += Number(r.amount) || 0;
     }
     return buckets;
-  }, [rows, year, month]);
+  }, [rows, year, month, monthlyIncome]);
 
   const hasSpend = data.some((d) => d.spent > 0);
 
   return (
     <section className="rounded-2xl bg-card ring-1 ring-border p-5 md:p-6 flex flex-col">
-      <h2 className="text-base font-semibold text-foreground">{labels.title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-foreground">{labels.title}</h2>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--chart-2)" }} />
+            {labels.income}
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: "var(--app-budget)" }} />
+            {labels.spent}
+          </span>
+        </div>
+      </div>
 
       <div className="mt-4 flex-1 min-h-[180px]">
         {loading && (
@@ -116,11 +132,17 @@ export function ActivityChart({
                   color: "var(--popover-foreground)",
                 }}
                 labelFormatter={(_, p) => p?.[0]?.payload?.full ?? ""}
-                formatter={(v) => [`$${Number(v ?? 0).toFixed(2)}`, labels.spent]}
+                formatter={(v, n) => [`$${Number(v ?? 0).toFixed(2)}`, n === "income" ? labels.income : labels.spent]}
               />
+              <Bar dataKey="income" radius={[4, 4, 0, 0]} isAnimationActive={false} maxBarSize={14}>
+                {data.map((_, i) => (
+                  <Cell key={i} fill="var(--chart-2)" fillOpacity={active === null || active === i ? 0.85 : 0.35} />
+                ))}
+              </Bar>
               <Bar
                 dataKey="spent"
                 radius={[4, 4, 0, 0]}
+                maxBarSize={14}
                 onMouseEnter={(_, i) => setActive(i)}
                 isAnimationActive={false}
               >

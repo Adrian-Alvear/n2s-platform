@@ -14,6 +14,7 @@ import { PersonalAccounts } from "@/components/personal-accounts";
 import { PersonalPayments } from "@/components/personal-payments";
 import { CategoryEnvelopes } from "@/components/category-envelopes";
 import { ActivityChart } from "@/components/activity-chart";
+import { SavingsGoals } from "@/components/savings-goals";
 import { MemberAvatar } from "@/components/member-avatar";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
@@ -109,6 +110,15 @@ export default function BudgetOverview() {
     activity: isP ? "My activity" : "Actividad",
     activityEmpty: isP ? "No spending in the last 12 months" : "Sin gastos en los últimos 12 meses",
     perPerson: isP ? "Per person" : "Por persona",
+    goals: isP ? "My goals" : "Metas de ahorro",
+    goalsEmpty: isP ? "No goals yet" : "Aún no hay metas",
+    goalAdd: isP ? "Add goal" : "Agregar meta",
+    goalName: isP ? "Goal name" : "Nombre de la meta",
+    goalSaved: isP ? "Saved" : "Ahorrado",
+    goalTarget: isP ? "Target" : "Meta",
+    goalSave: isP ? "Save" : "Guardar",
+    goalCancel: isP ? "Cancel" : "Cancelar",
+    goalRemove: isP ? "Remove" : "Eliminar",
   };
 
   return (
@@ -151,6 +161,25 @@ export default function BudgetOverview() {
           </div>
           <div className="shrink-0 self-start rounded-full bg-muted px-1 py-0.5">
             <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
+          </div>
+        </div>
+
+        {/* Card visual, as in the reference's balance panel. Stands for the
+            scope being viewed rather than a real payment card — this household
+            has no card data, so inventing a number would be a lie. */}
+        <div
+          className="mt-6 rounded-2xl p-4 text-white shadow-sm"
+          style={{ background: "linear-gradient(135deg, var(--app-budget), color-mix(in oklch, var(--app-budget) 55%, black))" }}
+        >
+          <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+            {activeScope === "personal" ? "Personal" : "Family"}
+          </p>
+          <p className="mt-3 text-lg font-semibold tabular-nums">${totalSpent.toFixed(2)}</p>
+          <div className="mt-1 flex items-baseline justify-between gap-2">
+            <span className="text-[11px] text-white/70">{L.spent}</span>
+            <span className="text-[11px] text-white/70 tabular-nums">
+              {new Date(year, month).toLocaleDateString(isP ? "en" : "es", { month: "long", year: "numeric" })}
+            </span>
           </div>
         </div>
 
@@ -199,11 +228,13 @@ export default function BudgetOverview() {
           scope={activeScope}
           year={year}
           month={month}
+          monthlyIncome={totalIncome}
           labels={{
             title: L.activity,
             empty: L.activityEmpty,
             loading: L.loading,
             spent: L.spent,
+            income: L.income,
           }}
         />
       </div>
@@ -276,7 +307,20 @@ export default function BudgetOverview() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <SavingsGoals
+            labels={{
+              title: L.goals,
+              empty: L.goalsEmpty,
+              add: L.goalAdd,
+              name: L.goalName,
+              saved: L.goalSaved,
+              target: L.goalTarget,
+              save: L.goalSave,
+              cancel: L.goalCancel,
+              remove: L.goalRemove,
+            }}
+          />
           {activeScope === "personal" ? (
             <>
               {/* Editable account balances */}
