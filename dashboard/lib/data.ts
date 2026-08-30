@@ -1,10 +1,13 @@
 export const MEMBERS = ["Adrian", "Javi", "Yazmi"] as const;
 export type Member = (typeof MEMBERS)[number];
 
+// Pastel chips read fine on the light theme but wash out to near-white blobs on
+// the dark cards, so each member also gets a dark pairing: a low-alpha tint of
+// the same hue for the fill and the 300 step for the label.
 export const MEMBER_COLORS: Record<Member, string> = {
-  Adrian: "bg-blue-100 text-blue-700",
-  Javi: "bg-violet-100 text-violet-700",
-  Yazmi: "bg-pink-100 text-pink-700",
+  Adrian: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+  Javi: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+  Yazmi: "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
 };
 
 export const CATEGORIES = [

@@ -148,9 +148,9 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
         <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
           <SheetHeader className="px-6 py-4 border-b border-border shrink-0">
             <div className="flex items-center justify-between">
-              <SheetTitle>Gastos</SheetTitle>
+              <SheetTitle className="font-semibold">Gastos</SheetTitle>
               {error && (
-                <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+                <p className="text-sm text-destructive" role="alert">{error}</p>
               )}
               <div className="flex items-center gap-2">
                 <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m); }} />
@@ -185,8 +185,14 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
             </span>
           </div>
 
-          {/* Entries list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-border">
+          {/* Entries table — the same shape as the budget page's "Últimos
+              movimientos" card, which this sheet is opened from: muted grey
+              column headings, a high-contrast description, the amount as a
+              plain neutral figure rather than alarm red, the member as a status
+              pill, and secondary detail demoted to grey columns. Narrow screens
+              drop those columns and fold category + date under the description.
+              Row actions get their own trailing column. */}
+          <div className="flex-1 overflow-y-auto">
             {loading && (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
                 <Loader2 className="animate-spin mr-2" size={16} /> Cargando...
@@ -195,31 +201,48 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
             {!loading && filtered.length === 0 && (
               <div className="text-center py-16 text-muted-foreground text-sm">No hay gastos este mes</div>
             )}
-            {filtered.map((e) => (
-              <div key={e.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/40 transition-colors">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900 flex items-center justify-center text-base shrink-0">
-                    {CATEGORY_ICONS[e.category] ?? "📦"}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{e.description}</p>
-                    <p className="text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MEMBER_COLORS[e.member as Member] ?? "bg-gray-100 text-gray-700"}`}>{e.member}</span>
-                  <span className="text-sm font-bold text-red-500 w-20 text-right">-${e.amount.toFixed(2)}</span>
-                  <div className="flex gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}>
-                      <Pencil size={12} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}>
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {!loading && filtered.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="w-full px-6 py-3 text-left text-xs font-normal text-muted-foreground">Descripción</th>
+                    <th className="px-3 py-3 text-right text-xs font-normal text-muted-foreground">Monto</th>
+                    <th className="hidden md:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">Categoría</th>
+                    <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">Persona</th>
+                    <th className="hidden md:table-cell px-3 py-3 text-right text-xs font-normal text-muted-foreground">Fecha</th>
+                    <th className="px-4 py-3"><span className="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((e) => (
+                    <tr key={e.id} className="border-b border-border/50 last:border-b-0 hover:bg-muted/40 transition-colors">
+                      <td className="px-6 py-3.5 max-w-0">
+                        <p className="truncate font-medium text-foreground">{e.description}</p>
+                        <p className="md:hidden truncate text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
+                      </td>
+                      <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
+                      <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
+                        <span className="mr-1.5">{CATEGORY_ICONS[e.category] ?? "📦"}</span>{e.category}
+                      </td>
+                      <td className="hidden sm:table-cell px-3 py-3.5">
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as Member] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
+                      </td>
+                      <td className="hidden md:table-cell px-3 py-3.5 text-right text-muted-foreground tabular-nums whitespace-nowrap">{formatDateTime(e.expense_at)}</td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setEditEntry(e)}>
+                            <Pencil size={12} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteEntry(e.id)}>
+                            <Trash2 size={12} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </SheetContent>
       </Sheet>
