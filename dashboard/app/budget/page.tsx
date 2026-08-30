@@ -13,6 +13,7 @@ import { PersonalTips } from "@/components/personal-tips";
 import { PersonalAccounts } from "@/components/personal-accounts";
 import { PersonalPayments } from "@/components/personal-payments";
 import { CategoryEnvelopes } from "@/components/category-envelopes";
+import { ActivityChart } from "@/components/activity-chart";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
 import { Loader2, ArrowRight, Users, User } from "lucide-react";
@@ -104,10 +105,13 @@ export default function BudgetOverview() {
     colCategory: isP ? "Category" : "Categoría",
     colWho: isP ? "Who" : "Quién",
     colDate: isP ? "Date" : "Fecha",
+    activity: isP ? "My activity" : "Actividad",
+    activityEmpty: isP ? "No spending in the last 12 months" : "Sin gastos en los últimos 12 meses",
+    perPerson: isP ? "Per person" : "Por persona",
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
 
       {/* Family / Personal toggle — only Adrian sees Personal */}
       {canPersonal && (
@@ -130,7 +134,10 @@ export default function BudgetOverview() {
       {/* Hero balance — one large figure on a card that sits a step lighter than
           the page. Violet is the accent only: it fills the budget-usage rail and
           nothing else here, so the number itself stays plain high-contrast. */}
-      <section className="rounded-2xl bg-card ring-1 ring-border p-6 md:p-8">
+      {/* Reference composition: balance and activity share the top row, then
+          envelopes sit beside the transaction table beneath. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      <section className="rounded-2xl bg-card ring-1 ring-border p-6 md:p-8 lg:col-span-2">
         {/* Stacks on mobile so the hero figure always gets the full card width —
             side by side it collided with the month pill at this type size. */}
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -185,6 +192,21 @@ export default function BudgetOverview() {
           </div>
         </div>
       </section>
+
+      <div className="lg:col-span-3">
+        <ActivityChart
+          scope={activeScope}
+          year={year}
+          month={month}
+          labels={{
+            title: L.activity,
+            empty: L.activityEmpty,
+            loading: L.loading,
+            spent: L.spent,
+          }}
+        />
+      </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
