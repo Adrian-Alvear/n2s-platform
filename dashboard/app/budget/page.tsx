@@ -102,7 +102,11 @@ export default function BudgetOverview() {
   const totalSpent = Object.values(spentByCategory).reduce((s, v) => s + v, 0);
   const saldo = totalIncome - totalBudget;
   // Share of the month's budget already spent — drives the hero's violet rail.
-  const overBudget = totalSpent > totalBudget;
+  // PERSONAL_BUDGETS maps every category to 0, so personal scope has no budget
+  // defined. "No budget set" is not an overrun — without this guard every
+  // personal-scope figure paints destructive red the moment anything is spent.
+  const hasBudget = totalBudget > 0;
+  const overBudget = hasBudget && totalSpent > totalBudget;
   const usedPct = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
 
   // Personal dashboard is in English; family stays in Spanish
@@ -200,8 +204,9 @@ export default function BudgetOverview() {
         </div>
 
         {/* Budget usage, directly labelled — the rail carries no meaning colour
-            alone, the figures beside it repeat it. */}
-        <div className="mt-7 md:mt-9 space-y-2">
+            alone, the figures beside it repeat it. Hidden when no budget is
+            defined, where a 0% rail would imply a limit that does not exist. */}
+        <div className={`mt-7 md:mt-9 space-y-2 ${hasBudget ? "" : "hidden"}`}>
           <div className="flex items-baseline justify-between gap-2 text-xs">
             <span className="text-muted-foreground">{L.spent} / {L.budget}</span>
             <span className={`tabular-nums font-medium ${overBudget ? "text-destructive" : "text-muted-foreground"}`}>
@@ -234,7 +239,11 @@ export default function BudgetOverview() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{L.remaining}</p>
-            <p className={`mt-1 text-xl font-semibold tabular-nums ${(totalBudget - totalSpent) < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>${(totalBudget - totalSpent).toFixed(0)}</p>
+            {hasBudget ? (
+              <p className={`mt-1 text-xl font-semibold tabular-nums ${(totalBudget - totalSpent) < 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>${(totalBudget - totalSpent).toFixed(0)}</p>
+            ) : (
+              <p className="mt-1 text-xl font-semibold tabular-nums text-muted-foreground">—</p>
+            )}
           </div>
         </div>
       </section>
