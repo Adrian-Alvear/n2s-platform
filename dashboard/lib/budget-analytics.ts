@@ -217,3 +217,171 @@ export function splitByMonth(
   }
   return { current, previous };
 }
+
+// ── Breakdown: where the month's money actually went ────────────────────────
+
+/**
+ * Sentinel category for the rolled-up remainder slice. Deliberately not a real
+ * category name — "Otros" already exists in CATEGORIES and is a genuine
+ * envelope, so a rollup labelled "Otros" would be indistinguishable from it.
+ */
+export const OTHER_SLICE = "__other__";
+
+export type CategorySlice = {
+  /** A real category name, or OTHER_SLICE for the rolled-up remainder. */
+  category: string;
+  amount: number;
+  /** 0..1 of the month's total spend. */
+  share: number;
+  /** Categories folded into this slice, largest first. Empty for a real one. */
+  rolled: string[];
+};
+
+/**
+ * The month's spend ranked by category and capped at `maxSlices`, with
+ * everything past the cap folded into one remainder slice.
+ *
+ * The cap exists because the categorical palette is five validated colours and
+ * this household has fourteen categories — a fifteen-wedge donut would either
+ * recycle colours or invent unvalidated ones. Ties break alphabetically so the
+ * order is stable between renders of the same data.
+ */
+export function categoryBreakdown(
+  entries: LedgerEntry[],
+  maxSlices = 5,
+): { slices: CategorySlice[]; total: number } {
+  const sums = sumByCategory(entries);
+  const ranked = Object.entries(sums)
+    .filter(([, amount]) => amount > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const grand = ranked.reduce((s, [, amount]) => s + amount, 0);
+  const share = (amount: number) => (grand > 0 ? amount / grand : 0);
+  const cap = Math.max(1, Math.floor(maxSlices));
+
+  if (ranked.length <= cap) {
+    return {
+      slices: ranked.map(([category, amount]) => ({
+        category,
+        amount,
+        share: share(amount),
+        rolled: [],
+      })),
+      total: grand,
+    };
+  }
+
+  // One slot is spent on the rollup itself, so only cap-1 categories are named.
+  const head = ranked.slice(0, cap - 1);
+  const tail = ranked.slice(cap - 1);
+  const tailAmount = tail.reduce((s, [, amount]) => s + amount, 0);
+  return {
+    slices: [
+      ...head.map(([category, amount]) => ({
+        category,
+        amount,
+        share: share(amount),
+        rolled: [],
+      })),
+      {
+        category: OTHER_SLICE,
+        amount: tailAmount,
+        share: share(tailAmount),
+        rolled: tail.map(([category]) => category),
+      },
+    ],
+    total: grand,
+  };
+}
+
+export type DonutSegment = {
+  /** Length of the drawn arc, in the same units as `circumference`. */
+  dash: number;
+  /** stroke-dashoffset that pushes this arc to its position on the ring. */
+  offset: number;
+};
+
+/**
+ * Ring geometry for a donut drawn as dashed circles rather than arc paths —
+ * one `<circle>` per slice, each showing a single dash of its own length.
+ *
+ * `gap` is subtracted from every arc to leave a hairline between wedges, and is
+ * skipped when only one slice is drawn: a gap in a full ring is just a notch.
+ * Values that are zero, negative or not finite take no arc at all.
+ */
+export function donutSegments(
+  values: number[],
+  circumference: number,
+  gap = 0,
+): DonutSegment[] {
+  const drawable = values.map((v) => (Number.isFinite(v) && v > 0 ? v : 0));
+  const sum = drawable.reduce((s, v) => s + v, 0);
+  if (sum <= 0) return drawable.map(() => ({ dash: 0, offset: 0 }));
+  const effectiveGap = drawable.filter((v) => v > 0).length > 1 ? gap : 0;
+  let cumulative = 0;
+  return drawable.map((v) => {
+    const length = (v / sum) * circumference;
+    const start = cumulative;
+    cumulative += length;
+    // Negative offset advances the dash pattern along the path, so each slice
+    // begins exactly where the previous one ended.
+    return { dash: Math.max(length - effectiveGap, 0), offset: -start };
+  });
+}
+
+export type CategoryDetail = {
+  category: string;
+  spent: number;
+  /** 0..1 of the month's total spend across all categories. */
+  share: number;
+  limit: number;
+  pace: Pace;
+  /** The same category's spend in the previous month. */
+  previous: number;
+  /** Signed: positive means this month spent more than last. */
+  delta: number;
+  count: number;
+  /** Mean size of a transaction in this category, 0 when there are none. */
+  average: number;
+  /** This category's rows, newest first. */
+  entries: LedgerEntry[];
+  topMember: Spender | null;
+};
+
+/**
+ * Everything the drill-down needs about one category, from rows the page has
+ * already fetched. Ordering is newest first with the id as the tiebreak, so two
+ * entries stamped at the same minute keep a stable order.
+ */
+export function categoryDetail(
+  category: string,
+  current: LedgerEntry[],
+  previous: LedgerEntry[],
+  limit: number,
+  year: number,
+  month: number,
+  now: Date,
+): CategoryDetail {
+  const rows = current
+    .filter((e) => e.category === category)
+    .sort(
+      (a, b) =>
+        new Date(b.expense_at).getTime() - new Date(a.expense_at).getTime() ||
+        b.id - a.id,
+    );
+  const spent = total(rows);
+  const grand = total(current);
+  const prev = total(previous.filter((e) => e.category === category));
+  return {
+    category,
+    spent,
+    share: grand > 0 ? spent / grand : 0,
+    limit,
+    pace: pace(spent, limit, year, month, now),
+    previous: prev,
+    delta: spent - prev,
+    count: rows.length,
+    average: rows.length > 0 ? spent / rows.length : 0,
+    entries: rows,
+    topMember: topSpender(rows),
+  };
+}

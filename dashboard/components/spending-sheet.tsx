@@ -11,6 +11,7 @@ import { CATEGORIES, MEMBERS, MEMBER_COLORS, type Category, type Member } from "
 import { supabase } from "@/lib/supabase";
 import { mutate } from "@/lib/db";
 import { MonthNav } from "@/components/month-nav";
+import { categoryIcon } from "@/lib/category-meta";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
@@ -222,7 +223,7 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
                       </td>
                       <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
                       <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
-                        <span className="mr-1.5">{CATEGORY_ICONS[e.category] ?? "📦"}</span>{e.category}
+                        <span className="mr-1.5">{categoryIcon(e.category)}</span>{e.category}
                       </td>
                       <td className="hidden sm:table-cell px-3 py-3.5">
                         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as Member] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
@@ -266,8 +267,3 @@ export function SpendingSheet({ open, onOpenChange, scope = "family" }: { open: 
   );
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
-  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
-};

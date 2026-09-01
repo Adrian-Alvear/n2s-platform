@@ -5,23 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/data";
 import { type Limits } from "@/lib/budget-limits";
+import { categoryIcon } from "@/lib/category-meta";
 import { Sliders, Minus, Plus, RotateCcw, Check, X } from "lucide-react";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
-  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
-};
-
-
 export function CategoryEnvelopes({
-  limits, spentByCategory, income, onSave, onReset,
+  limits, spentByCategory, income, onSave, onReset, onSelect,
 }: {
   limits: Limits;
   spentByCategory: Record<string, number>;
   income: number;
   onSave: (next: Limits) => void;
   onReset: () => void;
+  /** Opens the category drill-down. Suppressed while limits are being edited,
+      where every click belongs to the stepper instead. */
+  onSelect?: (category: string) => void;
 }) {
   const [adjusting, setAdjusting] = useState(false);
   const [draft, setDraft] = useState<Limits>(limits);
@@ -86,12 +83,29 @@ export function CategoryEnvelopes({
             const over = spent > limit;
             const pct = limit > 0 ? Math.min((spent / limit) * 100, 100) : (spent > 0 ? 100 : 0);
             return (
-              <div key={cat} className="px-4 md:px-6 py-4">
+              <div
+                key={cat}
+                className={`px-4 md:px-6 py-4 ${!adjusting && onSelect ? "cursor-pointer transition-colors hover:bg-muted/40" : ""}`}
+                // The whole row is the target, but the accessible control is the
+                // category name button below — the div only widens the hit area.
+                onClick={!adjusting && onSelect ? () => onSelect(cat) : undefined}
+              >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg shrink-0">{CATEGORY_ICONS[cat]}</div>
+                  <div aria-hidden className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg shrink-0">{categoryIcon(cat)}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm font-medium text-foreground truncate">{cat}</span>
+                      {!adjusting && onSelect ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onSelect(cat); }}
+                          aria-label={`Ver el detalle de ${cat}`}
+                          className="truncate text-sm font-medium text-foreground text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:text-violet-600"
+                        >
+                          {cat}
+                        </button>
+                      ) : (
+                        <span className="text-sm font-medium text-foreground truncate">{cat}</span>
+                      )}
                       {!adjusting && (
                         over ? (
                           <span className="text-xs tabular-nums shrink-0 text-destructive font-medium">Sobre ${(spent - limit).toFixed(0)}</span>

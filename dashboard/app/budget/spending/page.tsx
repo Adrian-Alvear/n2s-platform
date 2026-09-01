@@ -13,15 +13,11 @@ import { mutate } from "@/lib/db";
 import { useUser } from "@/lib/user-context";
 import { useBudgetScope } from "@/lib/budget-scope";
 import { MonthNav } from "@/components/month-nav";
+import { categoryIcon } from "@/lib/category-meta";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
-  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
-};
 
 function formatDateTime(ts: string) {
   const d = new Date(ts);
@@ -249,7 +245,7 @@ export default function Spending() {
                     </td>
                     <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
                     <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
-                      <span className="mr-1.5">{CATEGORY_ICONS[e.category] ?? "📦"}</span>{e.category}
+                      <span className="mr-1.5">{categoryIcon(e.category)}</span>{e.category}
                     </td>
                     <td className="hidden sm:table-cell px-3 py-3.5">
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as Member] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>

@@ -5,12 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DEFAULT_BUDGETS, INCOME, CATEGORIES, MEMBERS, MEMBER_COLORS, type Category } from "@/lib/data";
+import { categoryIcon } from "@/lib/category-meta";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
-  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
-};
 
 /** $-prefixed number field — one shape for every amount on this page. */
 function AmountField({ value, onChange, className }: {
@@ -105,7 +101,7 @@ export default function BudgetSettings() {
               {CATEGORIES.map((cat) => (
                 <div key={cat} className="flex items-center gap-3 border-b border-border/50 px-4 md:px-6 py-3">
                   <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium text-foreground">
-                    <span className="shrink-0">{CATEGORY_ICONS[cat] ?? "📦"}</span>
+                    <span className="shrink-0">{categoryIcon(cat)}</span>
                     <span className="truncate">{cat}</span>
                   </span>
                   <AmountField className="w-28 shrink-0" value={budgets[cat as Category]} onChange={(v) => setBudgets({ ...budgets, [cat]: v })} />

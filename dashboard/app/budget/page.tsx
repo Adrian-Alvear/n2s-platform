@@ -17,18 +17,15 @@ import { ActivityChart } from "@/components/activity-chart";
 import { SavingsGoals } from "@/components/savings-goals";
 import { MemberAvatar } from "@/components/member-avatar";
 import { BudgetInsights } from "@/components/budget-insights";
+import { CategoryBreakdown } from "@/components/category-breakdown";
+import { CategoryDetailSheet } from "@/components/category-detail-sheet";
+import { categoryIcon } from "@/lib/category-meta";
 import { splitByMonth } from "@/lib/budget-analytics";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
 import { Loader2, ArrowRight, Users, User } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
-
-const CATEGORY_ICONS: Record<string, string> = {
-  Arriendo: "🏠", Carro: "🚗", Seguro: "🛡️", Internet: "📡", Agua: "💧",
-  Gas: "🔥", Gasolina: "⛽", "Renta Calentador": "🌡️", "Comida y Aseo": "🛒",
-  "Comida Recreativa": "🍽️", Cumpleaños: "🎂", "Transporte Uber": "🚕", "Mto Carro": "🔧", Otros: "📦",
-};
 
 function formatDateTime(ts: string) {
   const d = new Date(ts);
@@ -48,6 +45,9 @@ export default function BudgetOverview() {
   const [prevEntries, setPrevEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The category whose drill-down is open, or null. Driven from the breakdown
+  // donut and from the envelope rows — both open the same sheet.
+  const [detailCategory, setDetailCategory] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<Accounts>({ checking: 0, savings: 0, credit: 0 });
   // Stable clock for the derived signals. A fresh Date on every render would
   // invalidate their memo constantly and make the pace maths drift mid-session.
@@ -293,6 +293,7 @@ export default function BudgetOverview() {
               income={totalIncome}
               onSave={applyLimits}
               onReset={resetToDefaults}
+              onSelect={setDetailCategory}
             />
           )}
 
@@ -331,7 +332,7 @@ export default function BudgetOverview() {
                           </td>
                           <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
                           <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
-                            <span className="mr-1.5">{CATEGORY_ICONS[e.category]}</span>{e.category}
+                            <span aria-hidden className="mr-1.5">{categoryIcon(e.category)}</span>{e.category}
                           </td>
                           <td className="hidden sm:table-cell px-3 py-3.5">
                             <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
@@ -348,6 +349,13 @@ export default function BudgetOverview() {
         </div>
 
         <div className="space-y-6">
+          <CategoryBreakdown
+            scope={activeScope}
+            loading={loading}
+            entries={entries}
+            onSelect={setDetailCategory}
+          />
+
           <SavingsGoals
             labels={{
               title: L.goals,
@@ -421,6 +429,18 @@ export default function BudgetOverview() {
       </div>
 
       <SpendingSheet open={sheetOpen} onOpenChange={setSheetOpen} scope={activeScope} />
+
+      <CategoryDetailSheet
+        category={detailCategory}
+        onClose={() => setDetailCategory(null)}
+        scope={activeScope}
+        entries={entries}
+        previousEntries={prevEntries}
+        limits={budgets}
+        year={year}
+        month={month}
+        now={clock}
+      />
     </div>
   );
 }
