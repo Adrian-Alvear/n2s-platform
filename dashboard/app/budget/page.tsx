@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DEFAULT_BUDGETS, PERSONAL_BUDGETS, CATEGORIES, INCOME, PERSONAL_INCOME, MEMBER_COLORS, MEMBERS } from "@/lib/data";
+import { DEFAULT_BUDGETS, PERSONAL_BUDGETS, CATEGORIES, INCOME, PERSONAL_INCOME, MEMBERS } from "@/lib/data";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/lib/user-context";
 import { useBudgetScope } from "@/lib/budget-scope";
@@ -19,19 +18,13 @@ import { MemberAvatar } from "@/components/member-avatar";
 import { BudgetInsights } from "@/components/budget-insights";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { CategoryDetailSheet } from "@/components/category-detail-sheet";
-import { categoryIcon } from "@/lib/category-meta";
+import { TransactionsPanel } from "@/components/transactions-panel";
 import { splitByMonth } from "@/lib/budget-analytics";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
-import { Loader2, ArrowRight, Users, User } from "lucide-react";
+import { Users, User } from "lucide-react";
 
 type Entry = { id: number; expense_at: string; description: string; category: string; amount: number; member: string };
-
-function formatDateTime(ts: string) {
-  const d = new Date(ts);
-  return d.toLocaleDateString("es", { day: "2-digit", month: "short" }) + " · " +
-    d.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
-}
 
 export default function BudgetOverview() {
   const now = new Date();
@@ -118,15 +111,7 @@ export default function BudgetOverview() {
     budget: isP ? "Bills" : "Presupuesto",
     spent: isP ? "Spent" : "Gastado",
     remaining: isP ? "Left" : "Restante",
-    recent: isP ? "Recent transactions" : "Últimos movimientos",
-    viewAll: isP ? "View all" : "Ver todos",
-    empty: isP ? "No transactions this month" : "No hay movimientos este mes",
     loading: isP ? "Loading..." : "Cargando...",
-    colName: isP ? "Name" : "Descripción",
-    colAmount: isP ? "Amount" : "Monto",
-    colCategory: isP ? "Category" : "Categoría",
-    colWho: isP ? "Who" : "Quién",
-    colDate: isP ? "Date" : "Fecha",
     activity: isP ? "My activity" : "Actividad",
     activityEmpty: isP ? "No spending in the last 12 months" : "Sin gastos en los últimos 12 meses",
     perPerson: isP ? "Per person" : "Por persona",
@@ -297,55 +282,14 @@ export default function BudgetOverview() {
             />
           )}
 
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-foreground">{L.recent}</h2>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground hover:text-violet-600" onClick={() => setSheetOpen(true)}>
-                {L.viewAll} <ArrowRight size={13} />
-              </Button>
-            </div>
-            {/* Transactions read as a real table: muted grey column headings over
-                high-contrast rows, the member as a status pill, and secondary
-                detail (category, date) demoted to grey columns. Narrow screens
-                drop those columns and fold the date under the description. */}
-            <Card>
-              <CardContent className="p-0">
-                {loading && <div className="flex items-center justify-center py-10 text-muted-foreground"><Loader2 className="animate-spin mr-2" size={16} /> {L.loading}</div>}
-                {!loading && entries.length === 0 && <div className="text-center py-10 text-muted-foreground text-sm">{L.empty}</div>}
-                {!loading && entries.length > 0 && (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="w-full px-4 md:px-6 py-3 text-left text-xs font-normal text-muted-foreground">{L.colName}</th>
-                        <th className="px-3 py-3 text-right text-xs font-normal text-muted-foreground">{L.colAmount}</th>
-                        <th className="hidden md:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">{L.colCategory}</th>
-                        <th className="hidden sm:table-cell px-3 py-3 text-left text-xs font-normal text-muted-foreground">{L.colWho}</th>
-                        <th className="hidden md:table-cell px-4 md:px-6 py-3 text-right text-xs font-normal text-muted-foreground">{L.colDate}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.slice(0, 8).map((e) => (
-                        <tr key={e.id} className="border-b border-border/50 last:border-b-0">
-                          <td className="px-4 md:px-6 py-3.5 max-w-0">
-                            <p className="truncate font-medium text-foreground">{e.description}</p>
-                            <p className="md:hidden truncate text-xs text-muted-foreground">{e.category} · {formatDateTime(e.expense_at)}</p>
-                          </td>
-                          <td className="px-3 py-3.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">-${e.amount.toFixed(2)}</td>
-                          <td className="hidden md:table-cell px-3 py-3.5 text-muted-foreground whitespace-nowrap">
-                            <span aria-hidden className="mr-1.5">{categoryIcon(e.category)}</span>{e.category}
-                          </td>
-                          <td className="hidden sm:table-cell px-3 py-3.5">
-                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${MEMBER_COLORS[e.member as keyof typeof MEMBER_COLORS] ?? "bg-muted text-muted-foreground"}`}>{e.member}</span>
-                          </td>
-                          <td className="hidden md:table-cell px-4 md:px-6 py-3.5 text-right text-muted-foreground tabular-nums whitespace-nowrap">{formatDateTime(e.expense_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {/* The month's ledger, searchable and filterable in place. The full
+              history still lives one click away in the spending sheet. */}
+          <TransactionsPanel
+            scope={activeScope}
+            loading={loading}
+            entries={entries}
+            onViewAll={() => setSheetOpen(true)}
+          />
         </div>
 
         <div className="space-y-6">
