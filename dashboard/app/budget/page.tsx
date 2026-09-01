@@ -19,6 +19,7 @@ import { BudgetInsights } from "@/components/budget-insights";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { CategoryDetailSheet } from "@/components/category-detail-sheet";
 import { TransactionsPanel } from "@/components/transactions-panel";
+import { RecurringPanel } from "@/components/recurring-panel";
 import { splitByMonth } from "@/lib/budget-analytics";
 import type { Accounts } from "@/lib/personal-accounts";
 import { getLimits, saveLimits, resetLimits, type Limits } from "@/lib/budget-limits";
@@ -297,6 +298,16 @@ export default function BudgetOverview() {
             scope={activeScope}
             loading={loading}
             entries={entries}
+            onSelect={setDetailCategory}
+          />
+
+          {/* Fixed commitments recovered from six months of history: what
+              usually lands each month, when, and what this month still owes. */}
+          <RecurringPanel
+            scope={activeScope}
+            year={year}
+            month={month}
+            now={clock}
             onSelect={setDetailCategory}
           />
 
