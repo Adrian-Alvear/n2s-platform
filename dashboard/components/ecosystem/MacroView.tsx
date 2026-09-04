@@ -108,24 +108,24 @@ function OrbitingNode({ node, index }: { node: NodeConfig; index: number }) {
 /** The real orbit, sampled from the ephemeris — a true ellipse at true inclination. */
 function OrbitPath({ node, index }: { node: NodeConfig; index: number }) {
   const points = useMemo(() => orbitPath(node.planet, node.radius), [node.planet, node.radius]);
-  const mat = useRef<THREE.Material & { opacity: number }>(null!);
+  // drei's Line builds its own LineMaterial, so the fade has to drive that
+  // material through the object ref. A <lineBasicMaterial> child is ignored,
+  // which silently pins opacity at whatever the prop said and hides the ring.
+  const line = useRef<React.ComponentRef<typeof Line>>(null);
   const boot = useBoot(index);
-  // Driven straight on the material so the fade costs no React renders.
   useFrame(() => {
-    if (mat.current) mat.current.opacity = node.ringOpacity * boot();
+    if (line.current?.material) line.current.material.opacity = node.ringOpacity * boot();
   });
   return (
     <Line
+      ref={line}
       points={points}
       color={node.ringColor}
       transparent
-      opacity={0}
+      opacity={node.ringOpacity}
       lineWidth={1}
       toneMapped={false}
-      ref={undefined}
-    >
-      <lineBasicMaterial ref={mat} attach="material" color={node.ringColor} transparent opacity={0} toneMapped={false} />
-    </Line>
+    />
   );
 }
 

@@ -50,7 +50,7 @@ export function ModuleFrame({
     <div className="dark fixed inset-0 z-[70] flex flex-col">
       {/* Scrim, not a solid fill — the world stays faintly visible behind. */}
       <div
-        className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/65 to-black/80 backdrop-blur-[1.5px]"
         style={{ opacity: arrived ? 1 : 0, transition: reduced ? undefined : `opacity ${DUR}ms ${EASE}` }}
       />
 

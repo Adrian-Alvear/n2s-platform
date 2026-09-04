@@ -16,10 +16,16 @@ import { DIVE_SECONDS, NODES, VOID, NEBULA_MACRO, SUNGOLD } from "./config";
 const loadAerospace = () => import("./worlds/AerospaceHangar");
 const loadFinancial = () => import("./worlds/FinancialHub");
 const loadPlaceholder = () => import("./worlds/Placeholder");
+const loadOverview = () => import("./worlds/OverviewWorld");
+const loadPortfolio = () => import("./worlds/PortfolioWorld");
+const loadLearning = () => import("./worlds/LearningWorld");
 
 const AerospaceHangar = lazy(loadAerospace);
 const FinancialHub = lazy(loadFinancial);
 const Placeholder = lazy(loadPlaceholder);
+const OverviewWorld = lazy(loadOverview);
+const PortfolioWorld = lazy(loadPortfolio);
+const LearningWorld = lazy(loadLearning);
 
 /**
  * Pull a world's chunk on intent rather than on click, so the dive never
@@ -28,6 +34,9 @@ const Placeholder = lazy(loadPlaceholder);
 export function warmWorld(node: string | null) {
   if (node === "aerospace") void loadAerospace();
   else if (node === "financial") void loadFinancial();
+  else if (node === "overview") void loadOverview();
+  else if (node === "portfolio") void loadPortfolio();
+  else if (node === "learning") void loadLearning();
   else if (node) void loadPlaceholder();
 }
 
@@ -35,6 +44,9 @@ function MicroWorld() {
   const active = useEcosystem((s) => s.active);
   if (active === "aerospace") return <AerospaceHangar />;
   if (active === "financial") return <FinancialHub />;
+  if (active === "overview") return <OverviewWorld />;
+  if (active === "portfolio") return <PortfolioWorld />;
+  if (active === "learning") return <LearningWorld />;
   const label = NODES.find((n) => n.id === active)?.label ?? "Module";
   return <Placeholder label={label} />;
 }
