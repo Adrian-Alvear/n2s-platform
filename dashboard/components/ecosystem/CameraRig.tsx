@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useEcosystem, nodePositions } from "./store";
 import { DIVE_SECONDS, BRIEF_SECONDS, BOOT_SECONDS } from "./config";
+import { prefersReducedMotion } from "@/lib/motion";
 
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -31,11 +32,20 @@ export function CameraRig() {
   // Cold start runs once per session, before any mode logic takes the camera.
   const bootT = useRef(0);
   const booted = useRef(false);
+  // Read once: the cold-start flight is the one animation that cannot be
+  // interrupted halfway, so it is skipped outright rather than shortened.
+  const reduced = useRef(prefersReducedMotion());
   const from = useRef(new THREE.Vector3());
   const tmp = useRef(new THREE.Vector3());
 
   useFrame(({ camera }, delta) => {
     if (!booted.current) {
+      if (reduced.current) {
+        camera.position.copy(HOME);
+        camera.lookAt(0, 0, 0);
+        booted.current = true;
+        return;
+      }
       if (bootT.current === 0) camera.position.copy(ARRIVAL);
       bootT.current = Math.min(1, bootT.current + delta / BOOT_SECONDS);
       // easeOutQuint: most of the distance is covered early, so it reads as

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { NODES } from "./config";
+import { prefersReducedMotion } from "@/lib/motion";
 import type { NodeId } from "./store";
 
 const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
@@ -29,11 +30,13 @@ export function ModuleFrame({
   // Arrival is staged so the panel resolves out of the dive rather than
   // snapping in: scrim first, then chrome, then content. Same 650ms curve as
   // the briefing, so the whole app moves in one language.
-  const [arrived, setArrived] = useState(false);
+  const reduced = prefersReducedMotion();
+  const [arrived, setArrived] = useState(reduced);
   useEffect(() => {
+    if (reduced) return;
     const raf = requestAnimationFrame(() => setArrived(true));
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [reduced]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,7 +51,7 @@ export function ModuleFrame({
       {/* Scrim, not a solid fill — the world stays faintly visible behind. */}
       <div
         className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
-        style={{ opacity: arrived ? 1 : 0, transition: `opacity ${DUR}ms ${EASE}` }}
+        style={{ opacity: arrived ? 1 : 0, transition: reduced ? undefined : `opacity ${DUR}ms ${EASE}` }}
       />
 
       <header
@@ -56,7 +59,7 @@ export function ModuleFrame({
         style={{
           opacity: arrived ? 1 : 0,
           transform: arrived ? "translateY(0)" : "translateY(-10px)",
-          transition: `opacity ${DUR}ms ${EASE} 90ms, transform ${DUR}ms ${EASE} 90ms`,
+          transition: reduced ? undefined : `opacity ${DUR}ms ${EASE} 90ms, transform ${DUR}ms ${EASE} 90ms`,
         }}
       >
         <button
@@ -77,8 +80,8 @@ export function ModuleFrame({
         style={{
           opacity: arrived ? 1 : 0,
           transform: arrived ? "translateY(0) scale(1)" : "translateY(18px) scale(0.985)",
-          filter: arrived ? "blur(0px)" : "blur(8px)",
-          transition: `opacity ${DUR}ms ${EASE} 170ms, transform ${DUR}ms ${EASE} 170ms, filter ${DUR}ms ${EASE} 170ms`,
+          filter: reduced ? undefined : arrived ? "blur(0px)" : "blur(8px)",
+          transition: reduced ? undefined : `opacity ${DUR}ms ${EASE} 170ms, transform ${DUR}ms ${EASE} 170ms, filter ${DUR}ms ${EASE} 170ms`,
           willChange: "transform, filter, opacity",
         }}
       >

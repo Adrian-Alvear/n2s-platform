@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { NODES } from "./config";
+import { stage, prefersReducedMotion, MASK, EASE } from "@/lib/motion";
 
 /**
  * The core briefing — the system introducing itself.
@@ -15,38 +16,46 @@ import { NODES } from "./config";
  * the line, then the manifest — never all at once.
  */
 
-const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const DUR = 650;
 
 // Tiled fractal noise. Cheap, and it stops large black fields from banding.
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")";
 
-function Stagger({ delay, children }: { delay: number; children: React.ReactNode }) {
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setShown(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
+/** Type rising out of a mask, rather than fading in place. */
+function Reveal({ played, delay, reduced, children }: {
+  played: boolean; delay: number; reduced: boolean; children: React.ReactNode;
+}) {
   return (
-    <div
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "translateY(0) scale(1)" : "translateY(14px) scale(0.985)",
-        filter: shown ? "blur(0px)" : "blur(6px)",
-        transition: `opacity ${DUR}ms ${EASE}, transform ${DUR}ms ${EASE}, filter ${DUR}ms ${EASE}`,
-        willChange: "transform, filter, opacity",
-      }}
-    >
-      {children}
-    </div>
+    <span style={MASK}>
+      <span
+        style={{
+          display: "block",
+          ...stage("reveal", played, { delay, duration: 950, ease: "expo", reduced }),
+        }}
+      >
+        {children}
+      </span>
+    </span>
   );
 }
 
 export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
   const [leaving, setLeaving] = useState(false);
+  const [played, setPlayed] = useState(false);
+  const reduced = prefersReducedMotion();
+
+  // Two nested frames so the from-state is committed before the to-state lands;
+  // a single frame can coalesce and the transition never runs.
+  useEffect(() => {
+    if (reduced) { setPlayed(true); return; }
+    let b = 0;
+    const a = requestAnimationFrame(() => { b = requestAnimationFrame(() => setPlayed(true)); });
+    return () => { cancelAnimationFrame(a); cancelAnimationFrame(b); };
+  }, [reduced]);
 
   function dismiss() {
+    if (reduced) { onDismiss(); return; }
     setLeaving(true);
     setTimeout(onDismiss, DUR * 0.7);
   }
@@ -63,7 +72,7 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
       className="fixed inset-0 z-[75] flex flex-col items-center justify-center px-6"
       style={{
         opacity: leaving ? 0 : 1,
-        transition: `opacity ${DUR}ms ${EASE}`,
+        transition: reduced ? undefined : `opacity ${DUR}ms ${EASE.slow}`,
       }}
     >
       {/* Scrim only — the pulled-back system stays visible behind the type. */}
@@ -74,40 +83,36 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
         className="pointer-events-none absolute inset-x-0 flex select-none items-center justify-center"
         style={{ top: "16%", zIndex: 1 }}
       >
-        <Stagger delay={80}>
+        <span style={stage("fade", played, { delay: 80, duration: 1600, ease: "slow", reduced })}>
           <span
             className="font-heading uppercase leading-none text-white/[0.07]"
             style={{ fontSize: "clamp(90px, 26vw, 360px)", letterSpacing: "-0.03em", whiteSpace: "nowrap" }}
           >
             N2S
           </span>
-        </Stagger>
+        </span>
       </div>
 
       <div className="relative z-10 w-full max-w-2xl">
-        <Stagger delay={200}>
-          <p className="text-[11px] font-light uppercase tracking-[0.45em] text-zinc-400">
-            Ecosystem online
-          </p>
-        </Stagger>
+        <p className="text-[11px] font-light uppercase tracking-[0.45em] text-zinc-400">
+          <Reveal played={played} delay={200} reduced={reduced}>Ecosystem online</Reveal>
+        </p>
 
-        <Stagger delay={340}>
-          <h1 className="mt-4 font-heading text-3xl font-medium leading-tight tracking-tight text-zinc-50 md:text-5xl">
-            Good to see you, Adrian.
-          </h1>
-        </Stagger>
+        <h1 className="mt-4 font-heading text-3xl font-medium leading-tight tracking-tight text-zinc-50 md:text-5xl">
+          <Reveal played={played} delay={340} reduced={reduced}>Good to see you, Adrian.</Reveal>
+        </h1>
 
-        <Stagger delay={460}>
+        <div style={stage("rise", played, { delay: 620, reduced })}>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-zinc-400">
             Five modules orbit the core, each on the real path of a planet. Fly into
             one to open it. Everything you see is live — positions are computed
             from the actual ephemeris for today.
           </p>
-        </Stagger>
+        </div>
 
         <div className="mt-9 space-y-px">
           {NODES.map((n, i) => (
-            <Stagger key={n.id} delay={620 + i * 90}>
+            <div key={n.id} style={stage("rise", played, { delay: 760 + i * 90, reduced })}>
               <div className="flex items-baseline gap-4 border-t border-white/[0.07] py-3">
                 <span
                   className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full"
@@ -123,11 +128,11 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
                   {n.planet}
                 </span>
               </div>
-            </Stagger>
+            </div>
           ))}
         </div>
 
-        <Stagger delay={620 + NODES.length * 90 + 120}>
+        <div style={stage("settle", played, { delay: 760 + NODES.length * 90 + 140, reduced })}>
           <button
             onClick={dismiss}
             className="group mt-10 flex items-center gap-3 text-zinc-300 transition-colors hover:text-white"
@@ -145,7 +150,7 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
               →
             </span>
           </button>
-        </Stagger>
+        </div>
       </div>
 
       {/* Grain plate, above everything, inert to pointers. */}

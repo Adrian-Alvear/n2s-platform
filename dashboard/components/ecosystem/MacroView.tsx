@@ -12,6 +12,7 @@ import { pathForNode } from "./routes";
 import { ICONS } from "./icons";
 import { Wire } from "./Wire";
 import { Companion } from "./Companion";
+import { warmWorld } from "./EcosystemCanvas";
 
 /** Shared simulated clock, read by the HUD without forcing React renders. */
 export const simClock = { date: new Date() };
@@ -71,7 +72,12 @@ function OrbitingNode({ node, index }: { node: NodeConfig; index: number }) {
         ref={group}
         position={start}
         scale={0}
-        onPointerOver={(e) => { e.stopPropagation(); setHovered(node.id); }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(node.id);
+          // Fetch on intent, not on click.
+          warmWorld(node.id);
+        }}
         onPointerOut={() => setHovered(null)}
         onClick={(e) => {
           e.stopPropagation();

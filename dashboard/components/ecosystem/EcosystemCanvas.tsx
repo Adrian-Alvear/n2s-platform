@@ -13,9 +13,23 @@ import { useRouter } from "next/navigation";
 import { pathForNode } from "./routes";
 import { DIVE_SECONDS, NODES, VOID, NEBULA_MACRO, SUNGOLD } from "./config";
 
-const AerospaceHangar = lazy(() => import("./worlds/AerospaceHangar"));
-const FinancialHub = lazy(() => import("./worlds/FinancialHub"));
-const Placeholder = lazy(() => import("./worlds/Placeholder"));
+const loadAerospace = () => import("./worlds/AerospaceHangar");
+const loadFinancial = () => import("./worlds/FinancialHub");
+const loadPlaceholder = () => import("./worlds/Placeholder");
+
+const AerospaceHangar = lazy(loadAerospace);
+const FinancialHub = lazy(loadFinancial);
+const Placeholder = lazy(loadPlaceholder);
+
+/**
+ * Pull a world's chunk on intent rather than on click, so the dive never
+ * stalls on a fetch. Idempotent — the module cache makes repeats free.
+ */
+export function warmWorld(node: string | null) {
+  if (node === "aerospace") void loadAerospace();
+  else if (node === "financial") void loadFinancial();
+  else if (node) void loadPlaceholder();
+}
 
 function MicroWorld() {
   const active = useEcosystem((s) => s.active);
