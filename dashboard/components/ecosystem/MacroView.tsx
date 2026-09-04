@@ -7,6 +7,8 @@ import * as THREE from "three";
 import { NODES, SUNGOLD, STARLIGHT, type NodeConfig } from "./config";
 import { heliocentric, orbitPath, simDate, PERIOD_DAYS, DAYS_PER_SECOND } from "./ephemeris";
 import { useEcosystem, nodePositions } from "./store";
+import { useRouter } from "next/navigation";
+import { pathForNode } from "./routes";
 import { ICONS } from "./icons";
 import { Wire } from "./Wire";
 
@@ -18,6 +20,7 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
   const hovered = useEcosystem((s) => s.hovered === node.id);
   const setHovered = useEcosystem((s) => s.setHovered);
   const dive = useEcosystem((s) => s.dive);
+  const router = useRouter();
   const Icon = ICONS[node.id];
   const tmp = useRef(new THREE.Vector3());
 
@@ -49,7 +52,12 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
         scale={hovered ? 1.45 : 1}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(node.id); }}
         onPointerOut={() => setHovered(null)}
-        onClick={(e) => { e.stopPropagation(); dive(node.id); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          dive(node.id);
+          const path = pathForNode(node.id);
+          if (path) router.push(path);
+        }}
       >
         <Icon color={node.color} intensity={hovered ? 2.6 : 1.5} />
         {hovered && (
@@ -88,6 +96,9 @@ function OrbitPath({ node }: { node: NodeConfig }) {
 export function MacroView() {
   const core = useRef<THREE.Group>(null!);
   const halo = useRef<THREE.Mesh>(null!);
+  const router = useRouter();
+  const setHovered = useEcosystem((s) => s.setHovered);
+  const coreHovered = useEcosystem((s) => s.hovered === "core");
 
   useFrame(({ clock }, delta) => {
     core.current.rotation.y += delta * 0.035;
@@ -99,14 +110,31 @@ export function MacroView() {
     <group>
       <Stars radius={120} depth={60} count={2600} factor={3.4} saturation={0} fade speed={0.4} />
 
-      {/* The sun. */}
-      <group ref={core}>
-        <Wire geometry={new THREE.IcosahedronGeometry(1.05, 1)} color={SUNGOLD} intensity={2.4} />
+      {/* The sun is the core module — your overview. Clicking it dives in. */}
+      <group
+        onPointerOver={(e) => { e.stopPropagation(); setHovered("core"); }}
+        onPointerOut={() => setHovered(null)}
+        onClick={(e) => { e.stopPropagation(); router.push("/overview"); }}
+      >
+        <group ref={core}>
+          <Wire
+            geometry={new THREE.IcosahedronGeometry(1.05, 1)}
+            color={SUNGOLD}
+            intensity={coreHovered ? 3.6 : 2.4}
+          />
+        </group>
+        <mesh ref={halo}>
+          <sphereGeometry args={[0.8, 32, 32]} />
+          <meshBasicMaterial color={SUNGOLD} toneMapped={false} transparent opacity={coreHovered ? 0.3 : 0.2} />
+        </mesh>
+        {coreHovered && (
+          <Html center distanceFactor={9} position={[0, 1.7, 0]} style={{ pointerEvents: "none" }}>
+            <span className="whitespace-nowrap rounded bg-black/60 px-2 py-1 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-100 backdrop-blur-sm">
+              Overview
+            </span>
+          </Html>
+        )}
       </group>
-      <mesh ref={halo}>
-        <sphereGeometry args={[0.8, 32, 32]} />
-        <meshBasicMaterial color={SUNGOLD} toneMapped={false} transparent opacity={0.2} />
-      </mesh>
       <pointLight position={[0, 0, 0]} intensity={12} distance={30} color={SUNGOLD} />
 
       {/* No tilt wrappers: inclination and eccentricity come from the data. */}

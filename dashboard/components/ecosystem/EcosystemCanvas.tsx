@@ -6,8 +6,9 @@ import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { MacroView } from "./MacroView";
 import { CameraRig, HOME } from "./CameraRig";
-import { ModuleOverlay, hasModule } from "./ModuleOverlay";
 import { useEcosystem } from "./store";
+import { useRouter } from "next/navigation";
+import { pathForNode } from "./routes";
 import { DIVE_SECONDS, NODES, VOID } from "./config";
 
 const AerospaceHangar = lazy(() => import("./worlds/AerospaceHangar"));
@@ -37,24 +38,26 @@ function TodayReadout() {
 }
 
 export default function EcosystemCanvas() {
+  const router = useRouter();
+  const routeNode = useEcosystem((s) => s.routeNode);
   const mode = useEcosystem((s) => s.mode);
   const active = useEcosystem((s) => s.active);
-  const exit = useEcosystem((s) => s.exit);
+  const enter = useEcosystem((s) => s.enter);
+  const land = useEcosystem((s) => s.land);
   const inMicro = mode === "micro";
-  // A node backed by a real 2D module opens that UI over its 3D world.
-  const showingModule = inMicro && hasModule(active);
 
+  // The URL is authoritative. Arriving on a module route (deep link, refresh,
+  // browser back) puts the world into that node's micro view without a dive;
+  // returning to / brings it home. The dive animation still runs when the user
+  // clicks a node, because that sets mode="diving" before the route changes.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && inMicro) exit();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [inMicro, exit]);
+    if (routeNode && routeNode !== "core" && mode === "macro") enter();
+    if (!routeNode && inMicro) land();
+  }, [routeNode, mode, inMicro, enter, land]);
 
   return (
-    // z-60 sits above the root layout's sidebar (z-50) so the void is unbroken.
-    <div className="fixed inset-0 z-[60]" style={{ background: VOID }}>
+    // The world sits behind every module frame, which renders at z-70.
+    <div className="fixed inset-0 z-0" style={{ background: VOID }}>
       <Canvas camera={{ position: HOME.toArray(), fov: 55 }} dpr={[1, 2]} gl={{ antialias: true }}>
         <color attach="background" args={[VOID]} />
         <ambientLight intensity={0.25} />
@@ -88,13 +91,12 @@ export default function EcosystemCanvas() {
         }}
       />
 
-      {showingModule && <ModuleOverlay />}
 
-      {/* Worlds without a 2D module get the plain exit affordance. */}
-      {inMicro && !showingModule && (
+      {/* Nodes with no module have no frame, so they keep their own exit. */}
+      {inMicro && !pathForNode(active ?? "core") && (
         <button
-          onClick={exit}
-          className="fixed left-6 top-6 z-[70] rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
+          onClick={() => router.push("/")}
+          className="fixed left-6 top-6 z-[80] rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-300 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white"
         >
           ← Warp out
         </button>
