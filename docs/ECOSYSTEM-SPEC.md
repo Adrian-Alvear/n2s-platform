@@ -297,6 +297,48 @@ liked for interaction/animation feel, not literal content)
 
 ---
 
+## 12. BUILD STATUS — as of the last session
+
+Branch `budget-reimagined`, 30 commits ahead of `main`. Nothing pushed.
+`main` is untouched at `63151ee`.
+
+### Shell — done
+- Canvas in the root layout, mounted once, survives navigation
+- URL drives the portal (`nodeForPath`); deep links, refresh and back all work
+- Sidebar and bottom nav deleted; `ModuleFrame` is the only chrome
+- Five nodes on real ephemeris orbits, Keplerian periods, true inclinations
+- Orbit rings sampled from the ephemeris across one full period
+
+### Core / JARVIS — done
+- Briefing as a cinematic hero carousel: eyebrow, huge serif module name,
+  accent rule in the node's colour, blurb, glossy pill, flanking cut-outs
+- Camera frames the featured module and flies between them as you cycle
+- Companion drone with attention cues, reporting one line from the ledger
+
+### Motion — done
+- `lib/motion.ts`: draw / reveal / rise / settle / fade, one curve
+- Cold-start camera flight, system assembles staggered outward from the sun
+- Module entrance staged: scrim → chrome 90ms → content 170ms out of blur
+- `prefers-reduced-motion` honoured everywhere
+- Micro-world chunks warmed on hover
+
+### Backdrop — done
+- Procedural nebula shader, per-node tint, eased crossfade on dive
+- A distinct world per node (globe / gallery / pages+motes / hangar / vault)
+
+### Financial module — done
+- Insights band, category donut + drill-down, searchable ledger,
+  recurring-cost detection, 12-month paired income/spend chart, savings goals,
+  hero balance card, per-person bars
+- 334 tests passing
+
+### NEXT UP (stated intent)
+**The internal pages / node interiors need to be made better.** The shell,
+motion and macro view are in good shape; the module UIs inside each node are
+where the remaining work is.
+
+---
+
 ## 12. OPEN / NOT YET BUILT
 
 - Bank connection. Researched: Monarch uses Plaid + MX + Finicity with fallback.
