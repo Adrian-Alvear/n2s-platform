@@ -6,11 +6,12 @@ import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { MacroView } from "./MacroView";
 import { CoreBriefing } from "./CoreBriefing";
+import { Nebula } from "./Nebula";
 import { CameraRig, HOME } from "./CameraRig";
 import { useEcosystem } from "./store";
 import { useRouter } from "next/navigation";
 import { pathForNode } from "./routes";
-import { DIVE_SECONDS, NODES, VOID } from "./config";
+import { DIVE_SECONDS, NODES, VOID, NEBULA_MACRO, SUNGOLD } from "./config";
 
 const AerospaceHangar = lazy(() => import("./worlds/AerospaceHangar"));
 const FinancialHub = lazy(() => import("./worlds/FinancialHub"));
@@ -63,6 +64,14 @@ export default function EcosystemCanvas() {
       <Canvas camera={{ position: HOME.toArray(), fov: 55 }} dpr={[1, 2]} gl={{ antialias: true }}>
         <color attach="background" args={[VOID]} />
         <ambientLight intensity={0.25} />
+
+        {/* One backdrop for the whole app. Its tint eases toward whichever node
+            is open, so ambience crossfades instead of cutting. */}
+        <Nebula
+          tint={(inMicro && NODES.find((n) => n.id === active)?.nebula) || NEBULA_MACRO}
+          core={SUNGOLD}
+          strength={inMicro ? 0.75 : 0.5}
+        />
         <CameraRig />
 
         {/* One Canvas for the whole app — the WebGL context is never destroyed. */}
