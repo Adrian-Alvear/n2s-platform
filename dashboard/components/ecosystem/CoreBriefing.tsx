@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { NODES } from "./config";
 import { pathForNode } from "./routes";
 import { stage, prefersReducedMotion, MASK, EASE } from "@/lib/motion";
+import { useEcosystem } from "./store";
 
 /**
  * The core briefing — the system introducing itself, composed as a cinematic
@@ -74,6 +75,14 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
   const [featured, setFeatured] = useState(0);
   const [swapping, setSwapping] = useState(false);
   const reduced = prefersReducedMotion();
+  const publishFeatured = useEcosystem((s) => s.setFeatured);
+
+  // Publish the framed module, and clear it on the way out so the camera
+  // returns to its own resting logic.
+  useEffect(() => {
+    publishFeatured(NODES[featured].id);
+  }, [featured, publishFeatured]);
+  useEffect(() => () => publishFeatured(null), [publishFeatured]);
 
   useEffect(() => {
     if (reduced) { setPlayed(true); return; }

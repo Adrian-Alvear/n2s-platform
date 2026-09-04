@@ -15,6 +15,9 @@ type State = {
   /** Mirrors the URL. The router owns this; the 3D layer only reads it. */
   routeNode: RouteNode;
   setRouteNode: (n: RouteNode) => void;
+  /** Which module the briefing is showing, so the camera can frame it. */
+  featured: NodeId | null;
+  setFeatured: (n: NodeId | null) => void;
   mode: Mode;
   active: NodeId | null;
   hovered: NodeId | "core" | null;
@@ -29,6 +32,8 @@ type State = {
 export const useEcosystem = create<State>((set) => ({
   routeNode: null,
   setRouteNode: (routeNode) => set({ routeNode }),
+  featured: null,
+  setFeatured: (featured) => set({ featured }),
   mode: "macro",
   active: null,
   hovered: null,

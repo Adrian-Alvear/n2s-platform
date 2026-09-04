@@ -23,6 +23,7 @@ export const ARRIVAL = new THREE.Vector3(0, 34, 74);
  */
 export function CameraRig() {
   const mode = useEcosystem((s) => s.mode);
+  const featured = useEcosystem((s) => s.featured);
   const active = useEcosystem((s) => s.active);
   const enter = useEcosystem((s) => s.enter);
   const land = useEcosystem((s) => s.land);
@@ -37,6 +38,11 @@ export function CameraRig() {
   const reduced = useRef(prefersReducedMotion());
   const from = useRef(new THREE.Vector3());
   const tmp = useRef(new THREE.Vector3());
+  // Briefing framing is damped continuously rather than run as a one-shot
+  // tween, because the target moves: the featured body is still orbiting and
+  // the carousel can change which one it is mid-flight.
+  const aim = useRef(new THREE.Vector3());
+  const want = useRef(new THREE.Vector3());
 
   useFrame(({ camera }, delta) => {
     if (!booted.current) {
@@ -80,11 +86,29 @@ export function CameraRig() {
     }
 
     if (mode === "briefing") {
-      if (!started.current) { from.current.copy(camera.position); started.current = true; t.current = 0; }
-      t.current = Math.min(1, t.current + delta / BRIEF_SECONDS);
-      camera.position.lerpVectors(from.current, VANTAGE, easeOutCubic(t.current));
-      camera.lookAt(0, 0, 0);
-      if (t.current >= 1) started.current = false;
+      started.current = false;
+      const body = featured ? nodePositions.get(featured) : undefined;
+
+      if (body) {
+        // Stand off the body along the sun-to-body axis, lifted and pushed
+        // back, so the planet sits beside the centred hero type rather than
+        // directly behind it.
+        const dist = body.length() || 1;
+        want.current
+          .copy(body)
+          .multiplyScalar(1 + 7.5 / dist)
+          .add(tmp.current.set(0, 5.2, 0));
+        // Aim between the body and the sun so both stay in frame.
+        aim.current.copy(body).multiplyScalar(0.55);
+      } else {
+        want.current.copy(VANTAGE);
+        aim.current.set(0, 0, 0);
+      }
+
+      // Frame-rate independent damping: the same easing at 30fps and 144fps.
+      const k = 1 - Math.pow(0.0015, delta);
+      camera.position.lerp(want.current, k);
+      camera.lookAt(aim.current);
       return;
     }
 
