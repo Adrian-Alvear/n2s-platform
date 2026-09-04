@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { pathForNode } from "./routes";
 import { ICONS } from "./icons";
 import { Wire } from "./Wire";
+import { Companion } from "./Companion";
 
 /** Shared simulated clock, read by the HUD without forcing React renders. */
 export const simClock = { date: new Date() };
@@ -167,6 +168,10 @@ export function MacroView() {
       <pointLight position={[0, 0, 0]} intensity={12} distance={30} color={SUNGOLD} />
 
       {/* No tilt wrappers: inclination and eccentricity come from the data. */}
+      {/* Rides with the core rather than orbiting — it belongs to the system,
+          not to any one module. */}
+      <Companion />
+
       {NODES.map((n, i) => (
         <group key={n.id}>
           <OrbitPath node={n} index={i} />
