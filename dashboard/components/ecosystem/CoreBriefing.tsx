@@ -1,52 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { NODES } from "./config";
+import { pathForNode } from "./routes";
 import { stage, prefersReducedMotion, MASK, EASE } from "@/lib/motion";
 
 /**
- * The core briefing — the system introducing itself.
+ * The core briefing — the system introducing itself, composed as a cinematic
+ * hero rather than a list.
  *
- * Motion language, applied uniformly: one 650ms cubic-bezier(0.4,0,0.2,1)
- * curve, every property (transform, filter, opacity) crossfading together
- * rather than in sequence. Depth reads through blur and scale, not just
- * position. A grain plate over everything keeps the black from looking flat.
- *
- * Content staggers in on a fixed rhythm so the eye lands on the wordmark, then
- * the line, then the manifest — never all at once.
+ * One module is featured at a time: eyebrow, huge serif name, a short accent
+ * rule in that module's colour, its line, and a glossy pill to enter. The other
+ * modules flank as cut-outs cropped by the screen edges; clicking one features
+ * it. The live 3D system is the backdrop, which is what a video would have been
+ * standing in for.
  */
 
 const DUR = 650;
-
-// Tiled fractal noise. Cheap, and it stops large black fields from banding.
 const GRAIN =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")";
 
-/** Type rising out of a mask, rather than fading in place. */
 function Reveal({ played, delay, reduced, children }: {
   played: boolean; delay: number; reduced: boolean; children: React.ReactNode;
 }) {
   return (
     <span style={MASK}>
-      <span
-        style={{
-          display: "block",
-          ...stage("reveal", played, { delay, duration: 950, ease: "expo", reduced }),
-        }}
-      >
+      <span style={{ display: "block", ...stage("reveal", played, { delay, duration: 950, ease: "expo", reduced }) }}>
         {children}
       </span>
     </span>
   );
 }
 
+/** A flanking module, cropped by the screen edge as in the reference plate. */
+function Flank({ side, node, onSelect, played, reduced }: {
+  side: "l" | "r";
+  node: (typeof NODES)[number];
+  onSelect: () => void;
+  played: boolean;
+  reduced: boolean;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      aria-label={`Show ${node.label}`}
+      className={`group absolute bottom-[14vh] z-[2] ${side === "l" ? "left-[-7vw]" : "right-[-7vw]"}`}
+      style={stage("fade", played, { delay: side === "l" ? 1040 : 1100, duration: 900, ease: "expo", reduced })}
+    >
+      <span
+        className="block h-[22vw] w-[22vw] max-h-[220px] max-w-[220px] rounded-full transition-transform duration-500 group-hover:scale-[1.045] group-active:scale-[0.99]"
+        style={{
+          background: `radial-gradient(circle at 34% 30%, ${node.color}, ${node.nebula} 62%, #05060a 100%)`,
+          boxShadow: `inset 0 0 60px rgba(0,0,0,.55), 0 0 90px ${node.color}22`,
+          transitionTimingFunction: EASE.quint,
+        }}
+      />
+      <span
+        className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap font-heading text-[11px] uppercase tracking-[0.42em] text-white/85 md:text-[13px] ${
+          side === "l" ? "left-[calc(22vw+18px)]" : "right-[calc(22vw+18px)]"
+        }`}
+      >
+        {node.label}
+      </span>
+    </button>
+  );
+}
+
 export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
+  const router = useRouter();
   const [leaving, setLeaving] = useState(false);
   const [played, setPlayed] = useState(false);
+  const [featured, setFeatured] = useState(0);
+  const [swapping, setSwapping] = useState(false);
   const reduced = prefersReducedMotion();
 
-  // Two nested frames so the from-state is committed before the to-state lands;
-  // a single frame can coalesce and the transition never runs.
   useEffect(() => {
     if (reduced) { setPlayed(true); return; }
     let b = 0;
@@ -67,97 +95,113 @@ export function CoreBriefing({ onDismiss }: { onDismiss: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const node = NODES[featured];
+  // Slots re-fill with the next two in order, so cycling is fully reversible.
+  const left = NODES[(featured + NODES.length - 1) % NODES.length];
+  const right = NODES[(featured + 1) % NODES.length];
+
+  /** Locked during the crossfade so clicks cannot collide mid-transition. */
+  function feature(i: number) {
+    if (swapping || i === featured) return;
+    setSwapping(true);
+    setFeatured(i);
+    setTimeout(() => setSwapping(false), reduced ? 0 : 420);
+  }
+
+  function enter() {
+    const path = pathForNode(node.id);
+    if (path) router.push(path);
+    else dismiss();
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[75] flex flex-col items-center justify-center px-6"
-      style={{
-        opacity: leaving ? 0 : 1,
-        transition: reduced ? undefined : `opacity ${DUR}ms ${EASE.slow}`,
-      }}
+      className="fixed inset-0 z-[75] overflow-hidden"
+      style={{ opacity: leaving ? 0 : 1, transition: reduced ? undefined : `opacity ${DUR}ms ${EASE.slow}` }}
     >
-      {/* Scrim only — the pulled-back system stays visible behind the type. */}
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-[3px]" onClick={dismiss} />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/55 to-black/80" onClick={dismiss} />
 
-      {/* Giant ghost wordmark, sitting behind the content like the reference. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 flex select-none items-center justify-center"
-        style={{ top: "16%", zIndex: 1 }}
-      >
-        <span style={stage("fade", played, { delay: 80, duration: 1600, ease: "slow", reduced })}>
-          <span
-            className="font-heading uppercase leading-none text-white/[0.07]"
-            style={{ fontSize: "clamp(90px, 26vw, 360px)", letterSpacing: "-0.03em", whiteSpace: "nowrap" }}
-          >
-            N2S
-          </span>
+      {/* Ghost wordmark, behind everything. */}
+      <div className="pointer-events-none absolute inset-x-0 flex select-none items-center justify-center" style={{ top: "12%", zIndex: 1 }}>
+        <span
+          className="font-heading uppercase leading-none text-white/[0.06]"
+          style={{ fontSize: "clamp(90px, 26vw, 360px)", letterSpacing: "-0.03em", whiteSpace: "nowrap",
+                   ...stage("fade", played, { delay: 80, duration: 1600, ease: "slow", reduced }) }}
+        >
+          N2S
         </span>
       </div>
 
-      <div className="relative z-10 w-full max-w-2xl">
-        <p className="text-[11px] font-light uppercase tracking-[0.45em] text-zinc-400">
-          <Reveal played={played} delay={200} reduced={reduced}>Ecosystem online</Reveal>
+      <Flank side="l" node={left} onSelect={() => feature((featured + NODES.length - 1) % NODES.length)} played={played} reduced={reduced} />
+      <Flank side="r" node={right} onSelect={() => feature((featured + 1) % NODES.length)} played={played} reduced={reduced} />
+
+      {/* Centre column. */}
+      <div className="pointer-events-none relative z-[3] flex h-full flex-col items-center justify-center px-6 text-center">
+        <p className="text-[11px] font-medium uppercase tracking-[0.5em] text-white/75 md:text-[13px]">
+          <Reveal played={played} delay={200} reduced={reduced}>Module</Reveal>
         </p>
 
-        <h1 className="mt-4 font-heading text-3xl font-medium leading-tight tracking-tight text-zinc-50 md:text-5xl">
-          <Reveal played={played} delay={340} reduced={reduced}>Good to see you, Adrian.</Reveal>
+        {/* Keyed so a swap replays the reveal rather than mutating text in place. */}
+        <h1
+          key={node.id}
+          className="mt-3 font-heading uppercase leading-none text-white"
+          style={{ fontSize: "clamp(52px, 9vw, 132px)", letterSpacing: "0.01em" }}
+        >
+          <Reveal played={played} delay={340} reduced={reduced}>{node.label}</Reveal>
         </h1>
 
-        <div style={stage("rise", played, { delay: 620, reduced })}>
-          <p className="mt-4 max-w-lg text-sm leading-relaxed text-zinc-400">
-            Five modules orbit the core, each on the real path of a planet. Fly into
-            one to open it. Everything you see is live — positions are computed
-            from the actual ephemeris for today.
-          </p>
-        </div>
+        <span
+          className="mt-7 block h-[5px] w-[100px] rounded-full"
+          style={{ backgroundColor: node.color, transformOrigin: "center",
+                   ...stage("draw", played, { delay: 780, duration: 650, ease: "expo", reduced }) }}
+        />
 
-        <div className="mt-9 space-y-px">
-          {NODES.map((n, i) => (
-            <div key={n.id} style={stage("rise", played, { delay: 760 + i * 90, reduced })}>
-              <div className="flex items-baseline gap-4 border-t border-white/[0.07] py-3">
-                <span
-                  className="h-1.5 w-1.5 shrink-0 translate-y-[-2px] rounded-full"
-                  style={{ backgroundColor: n.color }}
-                />
-                <span className="w-40 shrink-0 text-[13px] font-medium text-zinc-200">
-                  {n.label}
-                </span>
-                <span className="min-w-0 flex-1 text-[12px] leading-relaxed text-zinc-500">
-                  {n.blurb}
-                </span>
-                <span className="hidden shrink-0 text-[10px] uppercase tracking-[0.2em] text-zinc-600 sm:block">
-                  {n.planet}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p
+          className="mt-6 max-w-md text-sm leading-relaxed text-white/90 md:text-base"
+          style={stage("rise", played, { delay: 860, reduced })}
+        >
+          {node.blurb}
+        </p>
 
-        <div style={stage("settle", played, { delay: 760 + NODES.length * 90 + 140, reduced })}>
+        <div className="pointer-events-auto" style={stage("settle", played, { delay: 1140, duration: 700, reduced })}>
           <button
-            onClick={dismiss}
-            className="group mt-10 flex items-center gap-3 text-zinc-300 transition-colors hover:text-white"
+            onClick={enter}
+            className="mt-9 inline-flex h-[58px] items-center justify-center rounded-full px-10 text-[13px] font-bold uppercase tracking-[0.12em] text-[#071227] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.99] md:h-[66px] md:px-12"
+            style={{
+              background: "linear-gradient(180deg,#ffffff 0%,#d6e8f8 4%,#d9ecfe 72%,#ffffff 100%)",
+              boxShadow: "0 10px 18px -8px rgba(255,255,255,.5), 0 0 26px rgba(255,255,255,.18), inset 0 0 0 2px rgba(255,255,255,.9)",
+            }}
           >
-            <span
-              className="font-heading uppercase leading-none"
-              style={{ fontSize: "clamp(20px, 3.4vw, 44px)", letterSpacing: "-0.02em" }}
-            >
-              Enter the system
-            </span>
-            <span
-              className="text-2xl transition-transform duration-200 group-hover:translate-x-1"
-              aria-hidden
-            >
-              →
-            </span>
+            {pathForNode(node.id) ? "Enter" : "Not built yet"}
           </button>
+        </div>
+
+        <div className="pointer-events-auto mt-8 flex gap-2" style={stage("fade", played, { delay: 1320, reduced })}>
+          {NODES.map((n, i) => (
+            <button
+              key={n.id}
+              onClick={() => feature(i)}
+              aria-label={`Show ${n.label}`}
+              className="h-1.5 rounded-full transition-all duration-500"
+              style={{
+                width: i === featured ? 22 : 6,
+                backgroundColor: i === featured ? n.color : "rgba(255,255,255,.3)",
+                transitionTimingFunction: EASE.quint,
+              }}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Grain plate, above everything, inert to pointers. */}
-      <div
-        className="pointer-events-none absolute inset-0 z-20"
-        style={{ backgroundImage: GRAIN, backgroundSize: "200px 200px", opacity: 0.4 }}
-      />
+      <button
+        onClick={dismiss}
+        className="absolute left-6 top-6 z-[4] rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+        style={stage("rise", played, { delay: 1400, reduced })}
+      >
+        ← Warp out
+      </button>
+
+      <div className="pointer-events-none absolute inset-0 z-[5]" style={{ backgroundImage: GRAIN, backgroundSize: "200px 200px", opacity: 0.4 }} />
     </div>
   );
 }
