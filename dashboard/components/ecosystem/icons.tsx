@@ -75,7 +75,20 @@ export function AerospaceIcon({ color, intensity = 1.5 }: IconProps) {
   );
 }
 
+/** Overview — a globe: latitude rings inside a sphere. */
+export function OverviewIcon({ color, intensity = 1.5 }: IconProps) {
+  const globe = useMemo(() => new THREE.SphereGeometry(0.34, 12, 8), []);
+  const ring = useMemo(() => new THREE.TorusGeometry(0.42, 0.01, 6, 32), []);
+  return (
+    <group>
+      <Wire geometry={globe} color={color} intensity={intensity} />
+      <Wire geometry={ring} color={color} intensity={intensity * 1.4} rotation={[Math.PI / 2.6, 0, 0]} />
+    </group>
+  );
+}
+
 export const ICONS: Record<NodeId, (p: IconProps) => React.JSX.Element> = {
+  overview: OverviewIcon,
   financial: FinancialIcon,
   portfolio: PortfolioIcon,
   learning: LearningIcon,

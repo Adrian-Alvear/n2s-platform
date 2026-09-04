@@ -96,8 +96,8 @@ function OrbitPath({ node }: { node: NodeConfig }) {
 export function MacroView() {
   const core = useRef<THREE.Group>(null!);
   const halo = useRef<THREE.Mesh>(null!);
-  const router = useRouter();
   const setHovered = useEcosystem((s) => s.setHovered);
+  const brief = useEcosystem((s) => s.brief);
   const coreHovered = useEcosystem((s) => s.hovered === "core");
 
   useFrame(({ clock }, delta) => {
@@ -114,7 +114,7 @@ export function MacroView() {
       <group
         onPointerOver={(e) => { e.stopPropagation(); setHovered("core"); }}
         onPointerOut={() => setHovered(null)}
-        onClick={(e) => { e.stopPropagation(); router.push("/overview"); }}
+        onClick={(e) => { e.stopPropagation(); brief(); }}
       >
         <group ref={core}>
           <Wire
@@ -130,7 +130,7 @@ export function MacroView() {
         {coreHovered && (
           <Html center distanceFactor={9} position={[0, 1.7, 0]} style={{ pointerEvents: "none" }}>
             <span className="whitespace-nowrap rounded bg-black/60 px-2 py-1 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-100 backdrop-blur-sm">
-              Overview
+              Core
             </span>
           </Html>
         )}

@@ -4,12 +4,14 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useEcosystem, nodePositions } from "./store";
-import { DIVE_SECONDS } from "./config";
+import { DIVE_SECONDS, BRIEF_SECONDS } from "./config";
 
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 // ~13deg above the ecliptic - the near-edge-on angle of an orrery plate.
 export const HOME = new THREE.Vector3(0, 3.6, 16);
+/** Wide vantage for the briefing — the whole system in frame, seen from above. */
+export const VANTAGE = new THREE.Vector3(0, 13, 30);
 
 /**
  * Drives the portal dive. The camera accelerates toward the node's LIVE
@@ -47,6 +49,15 @@ export function CameraRig() {
         started.current = false;
         enter();
       }
+      return;
+    }
+
+    if (mode === "briefing") {
+      if (!started.current) { from.current.copy(camera.position); started.current = true; t.current = 0; }
+      t.current = Math.min(1, t.current + delta / BRIEF_SECONDS);
+      camera.position.lerpVectors(from.current, VANTAGE, easeOutCubic(t.current));
+      camera.lookAt(0, 0, 0);
+      if (t.current >= 1) started.current = false;
       return;
     }
 

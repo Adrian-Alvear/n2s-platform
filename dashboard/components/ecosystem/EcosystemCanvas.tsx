@@ -5,6 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { MacroView } from "./MacroView";
+import { CoreBriefing } from "./CoreBriefing";
 import { CameraRig, HOME } from "./CameraRig";
 import { useEcosystem } from "./store";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export default function EcosystemCanvas() {
   const active = useEcosystem((s) => s.active);
   const enter = useEcosystem((s) => s.enter);
   const land = useEcosystem((s) => s.land);
+  const briefing = mode === "briefing";
   const inMicro = mode === "micro";
 
   // The URL is authoritative. Arriving on a module route (deep link, refresh,
@@ -64,14 +66,14 @@ export default function EcosystemCanvas() {
         <CameraRig />
 
         {/* One Canvas for the whole app — the WebGL context is never destroyed. */}
-        {!inMicro && <MacroView />}
+        {(!inMicro || briefing) && <MacroView />}
         {inMicro && (
           <Suspense fallback={null}>
             <MicroWorld />
           </Suspense>
         )}
 
-        {mode === "macro" && (
+        {(mode === "macro" || briefing) && (
           <OrbitControls enablePan enableZoom minDistance={5} maxDistance={34} maxPolarAngle={Math.PI / 1.9} />
         )}
 
@@ -104,7 +106,9 @@ export default function EcosystemCanvas() {
 
       {mode === "macro" && <TodayReadout />}
 
-      {mode === "macro" && (
+      {briefing && <CoreBriefing onDismiss={land} />}
+
+      {mode === "macro" && !briefing && (
         <p className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-light uppercase tracking-[0.35em] text-zinc-400/50">
           Drag to orbit · scroll to zoom · click a node to enter
         </p>

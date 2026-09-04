@@ -8,7 +8,7 @@ import type { NodeId } from "./store";
 export type ModuleRoute = { prefix: string; node: NodeId | "core" };
 
 export const MODULE_ROUTES: ModuleRoute[] = [
-  { prefix: "/overview", node: "core" },
+  { prefix: "/overview", node: "overview" },
   { prefix: "/budget", node: "financial" },
 ];
 
