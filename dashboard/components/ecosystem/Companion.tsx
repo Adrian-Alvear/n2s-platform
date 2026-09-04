@@ -1,11 +1,19 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Wire } from "./Wire";
 import { SUNGOLD, SILVER } from "./config";
+import { Html } from "@react-three/drei";
 import { useEcosystem, nodePositions } from "./store";
+import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/user-context";
+import { useBudgetScope } from "@/lib/budget-scope";
+import { getLimits } from "@/lib/budget-limits";
+import { DEFAULT_BUDGETS, PERSONAL_BUDGETS } from "@/lib/data";
+import { buildReport, type Report } from "@/lib/companion-report";
+import type { LedgerEntry } from "@/lib/budget-analytics";
 
 /**
  * The core's companion — a small drone that gives the system a presence to
@@ -16,6 +24,44 @@ import { useEcosystem, nodePositions } from "./store";
  * brightens. Idle motion is two sine waves at unrelated periods so the bob
  * never lands on an obvious loop.
  */
+/**
+ * The month's one notable fact, read once when the macro view settles. Reads
+ * only — the drone reports on the ledger, it never touches it.
+ */
+function useReport(active: boolean) {
+  const { user } = useUser();
+  const { scope } = useBudgetScope();
+  const [report, setReport] = useState<Report | null>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const canPersonal = (user?.name ?? "").toLowerCase().startsWith("adrian");
+    const activeScope = canPersonal ? scope : "family";
+
+    let cancelled = false;
+    supabase
+      .from("entries")
+      .select("expense_at, description, category, amount, member")
+      .eq("scope", activeScope)
+      .gte("expense_at", new Date(year, month, 1).toISOString())
+      .lt("expense_at", new Date(year, month + 1, 1).toISOString())
+      .then(({ data }) => {
+        if (cancelled) return;
+        const entries = (data ?? []) as LedgerEntry[];
+        const limits =
+          activeScope === "personal" ? PERSONAL_BUDGETS : getLimits("family", year, month);
+        const totalBudget = Object.values(limits).reduce((a, b) => a + b, 0);
+        setReport(buildReport(entries, limits, totalBudget, year, month, now));
+      });
+    return () => { cancelled = true; };
+  }, [active, user, scope]);
+
+  return report;
+}
+
 export function Companion() {
   const rig = useRef<THREE.Group>(null!);
   const head = useRef<THREE.Group>(null!);
@@ -25,6 +71,7 @@ export function Companion() {
 
   const hovered = useEcosystem((s) => s.hovered);
   const mode = useEcosystem((s) => s.mode);
+  const report = useReport(mode === "macro");
 
   const shell = useMemo(() => new THREE.OctahedronGeometry(0.2, 0), []);
   const ring = useMemo(() => new THREE.TorusGeometry(0.3, 0.008, 6, 40), []);
@@ -89,6 +136,18 @@ export function Companion() {
           <Wire key={s} geometry={fin} color={SILVER} intensity={1.2} position={[s * 0.17, 0, -0.04]} />
         ))}
       </group>
+
+      {report && mode === "macro" && !hovered && (
+        <Html position={[0, 0.52, 0]} center distanceFactor={11} style={{ pointerEvents: "none" }}>
+          <div className="flex max-w-[260px] items-start gap-2 whitespace-normal rounded-lg bg-black/70 px-2.5 py-1.5 backdrop-blur-sm">
+            <span
+              className="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: report.urgent ? "var(--destructive)" : SUNGOLD }}
+            />
+            <span className="text-[11px] font-light leading-snug text-zinc-200">{report.text}</span>
+          </div>
+        </Html>
+      )}
 
       {/* Gimbal rings, tumbling around the shell. */}
       <group ref={gimbalA}>
