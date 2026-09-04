@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Trail, Html, Stars, Line } from "@react-three/drei";
 import * as THREE from "three";
-import { NODES, SUNGOLD, STARLIGHT, type NodeConfig } from "./config";
+import { NODES, SUNGOLD, STARLIGHT, BOOT_SECONDS, BOOT_STAGGER, type NodeConfig } from "./config";
 import { heliocentric, orbitPath, simDate, PERIOD_DAYS, DAYS_PER_SECOND } from "./ephemeris";
 import { useEcosystem, nodePositions } from "./store";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,21 @@ import { Wire } from "./Wire";
 /** Shared simulated clock, read by the HUD without forcing React renders. */
 export const simClock = { date: new Date() };
 
-function OrbitingNode({ node }: { node: NodeConfig }) {
+/** Shared boot easing. Index-staggered so assembly reads outward from the sun. */
+function useBoot(index: number) {
+  const t = useRef(0);
+  const delay = index * BOOT_STAGGER;
+  useFrame((_, delta) => {
+    t.current = Math.min(1, t.current + delta / (BOOT_SECONDS * 0.55));
+  });
+  return () => {
+    const raw = (t.current * (BOOT_SECONDS * 0.55) - delay) / (BOOT_SECONDS * 0.45);
+    const c = Math.min(1, Math.max(0, raw));
+    return 1 - Math.pow(1 - c, 3);
+  };
+}
+
+function OrbitingNode({ node, index }: { node: NodeConfig; index: number }) {
   const group = useRef<THREE.Group>(null!);
   const hovered = useEcosystem((s) => s.hovered === node.id);
   const setHovered = useEcosystem((s) => s.setHovered);
@@ -31,6 +45,7 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
     () => heliocentric(node.planet, node.radius, simDate(0), new THREE.Vector3()),
     [node.planet, node.radius],
   );
+  const boot = useBoot(index);
 
   useFrame(({ clock }) => {
     const date = simDate(clock.getElapsedTime());
@@ -38,6 +53,11 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
     heliocentric(node.planet, node.radius, date, tmp.current);
     group.current.position.copy(tmp.current);
     group.current.rotation.y += 0.0012;
+
+    // Bodies scale up onto their orbit as the system assembles.
+    const b = boot();
+    const target = hovered ? 1.45 : 1;
+    group.current.scale.setScalar(target * b);
 
     let v = nodePositions.get(node.id);
     if (!v) nodePositions.set(node.id, (v = new THREE.Vector3()));
@@ -49,7 +69,7 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
       <group
         ref={group}
         position={start}
-        scale={hovered ? 1.45 : 1}
+        scale={0}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(node.id); }}
         onPointerOut={() => setHovered(null)}
         onClick={(e) => {
@@ -79,17 +99,26 @@ function OrbitingNode({ node }: { node: NodeConfig }) {
 }
 
 /** The real orbit, sampled from the ephemeris — a true ellipse at true inclination. */
-function OrbitPath({ node }: { node: NodeConfig }) {
+function OrbitPath({ node, index }: { node: NodeConfig; index: number }) {
   const points = useMemo(() => orbitPath(node.planet, node.radius), [node.planet, node.radius]);
+  const mat = useRef<THREE.Material & { opacity: number }>(null!);
+  const boot = useBoot(index);
+  // Driven straight on the material so the fade costs no React renders.
+  useFrame(() => {
+    if (mat.current) mat.current.opacity = node.ringOpacity * boot();
+  });
   return (
     <Line
       points={points}
       color={node.ringColor}
       transparent
-      opacity={node.ringOpacity}
+      opacity={0}
       lineWidth={1}
       toneMapped={false}
-    />
+      ref={undefined}
+    >
+      <lineBasicMaterial ref={mat} attach="material" color={node.ringColor} transparent opacity={0} toneMapped={false} />
+    </Line>
   );
 }
 
@@ -138,10 +167,10 @@ export function MacroView() {
       <pointLight position={[0, 0, 0]} intensity={12} distance={30} color={SUNGOLD} />
 
       {/* No tilt wrappers: inclination and eccentricity come from the data. */}
-      {NODES.map((n) => (
+      {NODES.map((n, i) => (
         <group key={n.id}>
-          <OrbitPath node={n} />
-          <OrbitingNode node={n} />
+          <OrbitPath node={n} index={i} />
+          <OrbitingNode node={n} index={i} />
         </group>
       ))}
     </group>

@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NODES } from "./config";
 import type { NodeId } from "./store";
+
+const EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
+const DUR = 650;
 
 const LABELS: Record<string, string> = {
   core: "Overview",
@@ -23,6 +26,15 @@ export function ModuleFrame({
   onExit: () => void;
   children: React.ReactNode;
 }) {
+  // Arrival is staged so the panel resolves out of the dive rather than
+  // snapping in: scrim first, then chrome, then content. Same 650ms curve as
+  // the briefing, so the whole app moves in one language.
+  const [arrived, setArrived] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setArrived(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onExit();
@@ -34,9 +46,19 @@ export function ModuleFrame({
   return (
     <div className="dark fixed inset-0 z-[70] flex flex-col">
       {/* Scrim, not a solid fill — the world stays faintly visible behind. */}
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" />
+      <div
+        className="absolute inset-0 bg-black/75 backdrop-blur-[2px]"
+        style={{ opacity: arrived ? 1 : 0, transition: `opacity ${DUR}ms ${EASE}` }}
+      />
 
-      <header className="relative z-10 flex shrink-0 items-center gap-4 border-b border-white/10 px-5 py-3 md:px-6">
+      <header
+        className="relative z-10 flex shrink-0 items-center gap-4 border-b border-white/10 px-5 py-3 md:px-6"
+        style={{
+          opacity: arrived ? 1 : 0,
+          transform: arrived ? "translateY(0)" : "translateY(-10px)",
+          transition: `opacity ${DUR}ms ${EASE} 90ms, transform ${DUR}ms ${EASE} 90ms`,
+        }}
+      >
         <button
           onClick={onExit}
           className="rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-light uppercase tracking-[0.25em] text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
@@ -48,7 +70,20 @@ export function ModuleFrame({
         </span>
       </header>
 
-      <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      {/* Content resolves from blurred and slightly back, matching the way the
+          camera arrives — the panel reads as coming out of the dive. */}
+      <div
+        className="relative z-10 flex-1 overflow-y-auto overscroll-contain"
+        style={{
+          opacity: arrived ? 1 : 0,
+          transform: arrived ? "translateY(0) scale(1)" : "translateY(18px) scale(0.985)",
+          filter: arrived ? "blur(0px)" : "blur(8px)",
+          transition: `opacity ${DUR}ms ${EASE} 170ms, transform ${DUR}ms ${EASE} 170ms, filter ${DUR}ms ${EASE} 170ms`,
+          willChange: "transform, filter, opacity",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

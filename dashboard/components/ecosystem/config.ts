@@ -10,6 +10,10 @@ export const SUNGOLD = "#f0d9a8";
 export const DIVE_SECONDS = 1.6;
 /** The briefing pull-back, matched to the overlay's 650ms motion language. */
 export const BRIEF_SECONDS = 1.1;
+/** Cold-start flight: the camera falls in from outside the system. */
+export const BOOT_SECONDS = 3.2;
+/** Each body settles onto its orbit this long after the one inside it. */
+export const BOOT_STAGGER = 0.22;
 
 export type NodeConfig = {
   id: NodeId;
