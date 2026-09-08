@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   N2S design tokens — see docs/BUILD-PROMPT.md §5
+   Orrery / observatory: deep near-black void, silver and bone-white geometry,
+   one warm gold. Nodes differ by colour TEMPERATURE, not hue.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Core palette (§5.1) */
+  --void: #05060a;
+  --starlight: #f4f6fa;
+  --silver: #b9c0cc;
+  --platinum: #8b93a3;
+  --sungold: #f0d9a8;
+
+  /* Semantic — light theme */
+  --background: var(--starlight);
+  --foreground: var(--void);
+  --muted: var(--platinum);
+  --rule: color-mix(in oklab, var(--void) 12%, transparent);
+  --accent: color-mix(in oklab, var(--sungold) 70%, var(--void));
+
+  /* Motion (§5.2) — one curve, two alternates */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 650ms;
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --background: var(--void);
+    --foreground: var(--starlight);
+    --muted: var(--platinum);
+    --rule: color-mix(in oklab, var(--silver) 18%, transparent);
+    --accent: var(--sungold);
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: var(--void);
+  --foreground: var(--starlight);
+  --muted: var(--platinum);
+  --rule: color-mix(in oklab, var(--silver) 18%, transparent);
+  --accent: var(--sungold);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-text);
+  --font-mono: var(--font-numeric);
+}
+
+html { color-scheme: light dark; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-text), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numerals must align in columns and must not jitter (§5.3, §6.7). */
+.tabular { font-family: var(--font-numeric), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------------------
+   Motion primitives (§5.2). Five names, one definition each.
+   Entrance runs once then removes its own classes — see lib/motion.ts.
+   --------------------------------------------------------------------------- */
+
+@keyframes n2s-draw   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes n2s-reveal { from { transform: translateY(115%); } to { transform: translateY(0); } }
+@keyframes n2s-rise   { from { transform: translateY(1.25rem); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes n2s-settle { from { transform: scale(0.985); opacity: 0; } to { transform: none; opacity: 1; } }
+/* FADE never translates — translating a full-bleed layer drags a bare edge in. */
+@keyframes n2s-fade   { from { opacity: 0; } to { opacity: 1; } }
+
+.n2s-draw   { transform-origin: center; animation: n2s-draw var(--dur) var(--ease) both; }
+.n2s-rise   { animation: n2s-rise var(--dur) var(--ease) both; }
+.n2s-settle { animation: n2s-settle var(--dur) var(--ease-quint) both; }
+.n2s-fade   { animation: n2s-fade var(--dur) var(--ease) both; }
+
+/* Masked reveal: the padding/margin pair stops the mask clipping ascenders. */
+.n2s-reveal-mask { overflow: hidden; padding-top: 0.18em; margin-top: -0.18em; }
+.n2s-reveal-mask > * { animation: n2s-reveal var(--dur) var(--ease-expo) both; }
+
+/* The setting asks for NO motion, not less of it (§5.2). */
+@media (prefers-reduced-motion: reduce) {
+  .n2s-draw, .n2s-rise, .n2s-settle, .n2s-fade, .n2s-reveal-mask > * {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

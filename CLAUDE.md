@@ -1,0 +1,79 @@
+# N2S — Agent Context
+
+## Read this first
+
+**`docs/BUILD-PROMPT.md` is the single source of truth for this project.**
+Read it before doing any work here. It defines the product, the architecture,
+the visual and motion language, the constraints, and the build phases. This
+file is only a pointer and a status board — when the two disagree, the build
+prompt wins.
+
+## What this is
+
+One application with two faces and one world:
+
+- **The front face** (`/`, public) — N2S the studio. A software studio for
+  problems that don't have a product yet. Its own quality is the portfolio,
+  because there are no clients yet.
+- **The back face** (`/hub/*`, Cloudflare Access) — the operator's hub.
+
+They share one persistent 3D world. Signing in opens doors, it does not
+navigate elsewhere. See BUILD-PROMPT §0 and §2.
+
+## Current phase
+
+**Phase 0 — Foundation.** Scaffold only: Next.js + Workers + OpenNext, design
+tokens, typography, the motion library, and the Access gate. No real content,
+no WebGL yet.
+
+**Next up: Phase 1 — the front face, static.** Its first task is choosing the
+Lab set; see BUILD-PROMPT §11. Do not start Phase 2 (the 3D world) before
+Phase 1 stands on its own.
+
+## Stack
+
+Next.js 16 App Router · Cloudflare **Workers** via `@opennextjs/cloudflare` ·
+Tailwind v4 · zustand · Vitest. Package manager is **npm — never pnpm**.
+
+## Verification gates
+
+All three must pass before any slice is done:
+
+```bash
+npm run gates      # test + typecheck + cf-build
+```
+
+Individually: `npm test`, `npm run typecheck`, `npm run cf-build`.
+
+**`npm run cf-build` is the one that matters.** It runs
+`opennextjs-cloudflare build`. Plain `next build` does NOT exercise the OpenNext
+bundler and passes green while the deploy is broken.
+
+## Traps that have already cost time
+
+- **`esbuild` must stay a direct devDependency.** `@opennextjs/cloudflare`
+  imports it at runtime but declares it only as a devDependency, so it survives
+  on whatever another package hoists. Adding a dependency has silently broken
+  the deploy before. Verify lockfile changes against a clean
+  `rm -rf node_modules && npm ci`.
+- **Two nested `requestAnimationFrame`** before playing an entrance, or a single
+  frame coalesces and the animation never runs. `lib/motion.ts` does this.
+- Full list in BUILD-PROMPT §7. Read it before touching 3D or the build.
+
+## Hard rules
+
+- **Never write to the production database.** Reads only.
+- **Never invent client-facing content** — no fake logos, case studies,
+  testimonials or metrics. An empty section is honest; a fabricated one is a
+  liability.
+- **Never invent people.** Corporate "we" is fine; a phantom team is not.
+- Honour `prefers-reduced-motion` everywhere. The setting asks for *no* motion,
+  not less of it.
+- Tests are written **after** the feature is built, not before.
+- Don't commit to `main` and don't push. `main` is v1 and still deploys live.
+
+## Git
+
+This repo shares a remote with v1 (`gitlab.com:n2s3/n2s-platform`) but has
+**unrelated history**. Work happens on `v2`. `main` holds the v1 app and is
+still wired to Cloudflare — leave it alone until Adrian decides to cut over.
