@@ -54,7 +54,7 @@ export function SiteBackdrop() {
   return (
     // The field fades itself up from its own boot uniform, so this layer needs
     // no opacity animation that could strand it invisible.
-    <div aria-hidden className="n2s-backdrop">
+    <div aria-hidden className="absolute inset-0">
       <FieldCanvas />
     </div>
   );

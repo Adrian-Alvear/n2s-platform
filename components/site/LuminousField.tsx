@@ -101,10 +101,12 @@ export function LuminousField({
     for (let i = 0; i < COUNT; i++) {
       // sqrt() keeps the areal density even; without it everything clumps
       // at the centre.
-      const r = Math.sqrt(Math.random()) * RADIUS;
+      // pow < 0.5 biases toward the centre, so density falls off with the
+      // light rather than staying uniform to the horizon.
+      const r = Math.pow(Math.random(), 0.62) * RADIUS;
       const a = Math.random() * Math.PI * 2;
       pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.7;
       pos[i * 3 + 2] = Math.sin(a) * r;
       seed[i] = Math.random();
       scale[i] = 0.6 + Math.random() * 1.1;

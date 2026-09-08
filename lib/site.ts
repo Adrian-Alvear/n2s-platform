@@ -82,6 +82,14 @@ export const PRINCIPLES = [
  * Mixkit all permit commercial use), footage generated on a tool whose output
  * is ours, or a render of our own work. Never hotlink someone else's CDN.
  */
+/**
+ * Which hero backdrop to use.
+ *   "coded" — the generated field. A few KB, fully tunable, ours.
+ *   "video" — HERO_VIDEO below. Reference footage; dev-only until owned.
+ *   "none"  — CSS atmosphere alone.
+ */
+export const HERO_MODE: "coded" | "video" | "none" = "coded";
+
 export const HERO_VIDEO =
   process.env.NODE_ENV === "production"
     ? "" // Set to "/hero.mp4" once an owned clip is in public/.

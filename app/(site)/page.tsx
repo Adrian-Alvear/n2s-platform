@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AUDIENCE, HERO_POSTER, HERO_VIDEO, PRINCIPLES, SERVICES, SITE } from "@/lib/site";
+import { AUDIENCE, HERO_MODE, HERO_POSTER, HERO_VIDEO, PRINCIPLES, SERVICES, SITE } from "@/lib/site";
 import { labPieces } from "@/lib/content";
 import { Reveal } from "@/components/reveal";
 import { GlassLink } from "@/components/glass-link";
@@ -26,13 +26,15 @@ export default function Home() {
           video renders as a box in the middle of the page.
         */}
         <div aria-hidden className="absolute inset-0 overflow-hidden">
-          <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
+          {HERO_MODE === "video" && (
+            <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
+          )}
+          {HERO_MODE === "coded" && <SiteBackdrop />}
           {/* Legibility scrim, and a fade so the clip dissolves into the page
               rather than ending on a hard edge. */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
           <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[var(--background)]" />
         </div>
-        <SiteBackdrop />
 
       <div className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
 

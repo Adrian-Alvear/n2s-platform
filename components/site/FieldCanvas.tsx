@@ -31,6 +31,16 @@ export function FieldCanvas() {
       style={{ background: "transparent" }}
       onCreated={({ camera }) => camera.lookAt(0, 1.1, 0)}
     >
+      {/* The single warm source the field is lit by — the thing that makes
+          it read as one light in a void rather than a scattering of dots. */}
+      <mesh position={[0, 1.15, 0]}>
+        <sphereGeometry args={[0.42, 24, 24]} />
+        <meshBasicMaterial color="#f0d9a8" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 1.15, 0]}>
+        <sphereGeometry args={[1.5, 24, 24]} />
+        <meshBasicMaterial color="#f0d9a8" toneMapped={false} transparent opacity={0.09} />
+      </mesh>
       <LuminousField reducedMotion={reduced} />
       <EffectComposer>
         <Bloom intensity={1.4} luminanceThreshold={0.15} luminanceSmoothing={0.3} mipmapBlur />
