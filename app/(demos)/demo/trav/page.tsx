@@ -71,11 +71,17 @@ export default function Trav() {
 
   return (
     <div
-      className={`${inter.variable} min-h-screen bg-black text-white`}
+      className={`${inter.variable} relative min-h-screen text-white`}
       style={{ fontFamily: "var(--font-inter-trav), sans-serif" }}
     >
       {/* Background */}
-      <div className="fixed inset-0 -z-10">
+      {/*
+        z-0, NOT -z-10. A negative z-index child paints behind its parent's
+        background, so any opaque ancestor hides it entirely. The spec's -1
+        works only in a bare document where the body background propagates to
+        the page canvas.
+      */}
+      <div className="fixed inset-0 z-0">
         <video
           className="h-full w-full object-cover"
           src={REF_VIDEO.trav}
@@ -88,7 +94,7 @@ export default function Trav() {
       </div>
 
       {/* Header */}
-      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-6 py-6 md:px-16 md:py-10">
+      <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-6 md:px-16 md:py-10">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.6" aria-hidden>
@@ -120,7 +126,7 @@ export default function Trav() {
       </header>
 
       {/* Hero */}
-      <main className="mx-auto flex h-[100dvh] max-w-4xl flex-col items-center justify-center px-6 text-center">
+      <main className="relative z-10 mx-auto flex h-[100dvh] max-w-4xl flex-col items-center justify-center px-6 text-center">
         <svg
           className="trav-drop mb-8"
           width="40"

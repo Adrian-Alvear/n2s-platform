@@ -9,5 +9,7 @@ export default function DemoLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   if (!DEMOS_ENABLED) notFound();
-  return <div className="bg-black text-white">{children}</div>;
+  // No background here: a demo may place a fixed media layer beneath its
+  // content, and an opaque ancestor background would hide it.
+  return <div className="text-white">{children}</div>;
 }
