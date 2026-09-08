@@ -30,10 +30,19 @@ export default function Home() {
             <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
           )}
           {HERO_MODE === "coded" && <SiteBackdrop />}
-          {/* Legibility scrim, and a fade so the clip dissolves into the page
-              rather than ending on a hard edge. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
-          <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[var(--background)]" />
+          {/*
+            Scrims are for VIDEO only. Footage is bright and needs knocking
+            back for the type to read. The coded scene is already dark and
+            built around the type — a heavy scrim just buries it.
+          */}
+          {HERO_MODE === "video" && (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
+          )}
+          {HERO_MODE === "coded" && (
+            /* Just enough to protect the headline, and only on the left. */
+            <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-transparent" />
+          )}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[var(--background)]" />
         </div>
 
       <div className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
