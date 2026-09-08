@@ -65,7 +65,7 @@ export function HubWorld() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-0 opacity-0 [animation:n2s-fade_1.6s_var(--ease-expo)_forwards]"
+      className="n2s-backdrop-fixed"
     >
       <EcosystemCanvas />
     </div>

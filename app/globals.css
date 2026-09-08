@@ -210,3 +210,32 @@ body {
     transition: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Backdrop layers.
+   Deliberately plain CSS, not Tailwind arbitrary-value utilities: this layer
+   is load-bearing, and it previously computed to 0x0 with opacity 0 because
+   the generated utilities did not apply to it. Explicit properties here can't
+   fail that way. No negative z-index either — the content is lifted above
+   instead, so nothing can paint behind an opaque ancestor background.
+   --------------------------------------------------------------------------- */
+
+.n2s-backdrop {
+  /* Fills its positioned parent. Deliberately NOT sized in vh: if the
+     viewport reports zero height for any reason, a vh-sized backdrop
+     collapses to nothing and the canvas renders into a 0x0 box. */
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.n2s-backdrop-fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Anything that must sit over a backdrop. */
+.n2s-above { position: relative; z-index: 1; }

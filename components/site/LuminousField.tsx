@@ -49,7 +49,7 @@ const VERT = /* glsl */ `
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     // Size attenuates with depth so the field has real perspective.
-    gl_PointSize = aScale * uBoot * (34.0 / -mv.z) * (0.45 + vGlow);
+    gl_PointSize = aScale * uBoot * (58.0 / -mv.z) * (0.55 + vGlow * 1.4);
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -76,12 +76,12 @@ const FRAG = /* glsl */ `
     float spark = step(0.93, fract(vSeed * 97.31)) * 0.9;
 
     // toneMapped:false plus a value pushed past 1.0 is what Bloom catches.
-    gl_FragColor = vec4(col * (1.0 + spark) * (0.35 + vGlow * 1.9), alpha * (0.25 + vGlow) * uBoot);
+    gl_FragColor = vec4(col * (1.0 + spark) * (0.65 + vGlow * 2.6), alpha * (0.45 + vGlow * 0.9) * uBoot);
   }
 `;
 
 export function LuminousField({
-  cool = "#8b93a3",
+  cool = "#b9c0cc",
   warm = "#f0d9a8",
   reducedMotion = false,
 }: {

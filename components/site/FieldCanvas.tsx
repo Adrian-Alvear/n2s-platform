@@ -27,14 +27,14 @@ export function FieldCanvas() {
       camera={{ position: [0, 1.5, 13], fov: 46 }}
       // A backdrop behind type: 2x costs double the fill rate and shows nothing.
       dpr={[1, 1.5]}
-      gl={{ antialias: false, powerPreference: "high-performance" }}
+      gl={{ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
       style={{ background: "transparent" }}
       onCreated={({ camera }) => camera.lookAt(0, 1.1, 0)}
     >
       <LuminousField reducedMotion={reduced} />
       <EffectComposer>
-        <Bloom intensity={1.15} luminanceThreshold={0.22} luminanceSmoothing={0.3} mipmapBlur />
-        <Vignette eskil={false} offset={0.28} darkness={0.95} />
+        <Bloom intensity={1.4} luminanceThreshold={0.15} luminanceSmoothing={0.3} mipmapBlur />
+        <Vignette eskil={false} offset={0.35} darkness={0.85} />
       </EffectComposer>
     </Canvas>
   );

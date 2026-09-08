@@ -24,14 +24,14 @@ export default function Home() {
         <SiteBackdrop />
 
 
-        <div className="n2s-reveal-mask max-w-3xl">
+        <div className="n2s-above n2s-reveal-mask max-w-3xl">
           <h1 className="font-display text-5xl leading-[1.02] tracking-[-0.02em] text-balance sm:text-7xl">
             {SITE.positioning}
           </h1>
         </div>
 
         <p
-          className="n2s-rise mt-8 max-w-xl text-base leading-relaxed text-muted"
+          className="n2s-above n2s-rise mt-8 max-w-xl text-base leading-relaxed text-muted"
           style={{ animationDelay: "160ms" }}
         >
           Development-led, end to end. We take the problem from the first
@@ -39,7 +39,7 @@ export default function Home() {
         </p>
 
         <div
-          className="n2s-settle mt-12 flex flex-wrap items-center gap-4"
+          className="n2s-above n2s-settle mt-12 flex flex-wrap items-center gap-4"
           style={{ animationDelay: "320ms" }}
         >
           <GlassLink href={`mailto:${SITE.email}`} external>
@@ -55,7 +55,7 @@ export default function Home() {
 
         <div
           aria-hidden
-          className="n2s-draw mt-20 h-px w-full bg-rule"
+          className="n2s-above n2s-draw mt-20 h-px w-full bg-rule"
           style={{ animationDelay: "480ms" }}
         />
       </section>

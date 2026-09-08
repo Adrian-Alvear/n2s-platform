@@ -52,10 +52,9 @@ export function SiteBackdrop() {
   if (!ready) return null;
 
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[110vh] opacity-0 [animation:n2s-fade_2s_var(--ease-expo)_forwards]"
-    >
+    // The field fades itself up from its own boot uniform, so this layer needs
+    // no opacity animation that could strand it invisible.
+    <div aria-hidden className="n2s-backdrop">
       <FieldCanvas />
     </div>
   );
