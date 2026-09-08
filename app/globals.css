@@ -182,7 +182,7 @@ body {
   position: absolute;
   border-radius: 50%;
   aspect-ratio: 1;
-  filter: blur(90px);
+  filter: blur(70px);
   will-change: transform;
 }
 
@@ -193,16 +193,16 @@ body {
   width: 80%;
   top: -30%;
   left: 50%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 24%, transparent) 0%, transparent 68%);
-  animation: n2s-drift-a 37s ease-in-out infinite;
+  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 45%, transparent) 0%, transparent 70%);
+  animation: n2s-drift-a 19s linear infinite;
 }
 
 .n2s-atmosphere::after {
   width: 65%;
   top: 15%;
   left: -15%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--platinum) 20%, transparent) 0%, transparent 66%);
-  animation: n2s-drift-b 53s ease-in-out infinite;
+  background: radial-gradient(circle, color-mix(in oklab, var(--platinum) 38%, transparent) 0%, transparent 68%);
+  animation: n2s-drift-b 23s linear infinite;
 }
 
 .n2s-atmosphere > .n2s-aurora {
@@ -211,23 +211,39 @@ body {
   width: 46%;
   top: 42%;
   right: -10%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 30%, transparent) 0%, transparent 62%);
-  animation: n2s-drift-c 71s ease-in-out infinite;
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 52%, transparent) 0%, transparent 66%);
+  animation: n2s-drift-c 29s linear infinite;
 }
 
-/* Periods are coprime (37 / 53 / 71 seconds) so the composite never repeats
-   within a visit. Translations are in percent of each blob's own size. */
+/*
+  Periods are coprime so the composite never repeats, but SHORT enough to be
+  perceptible. An earlier version ran 37/53/71s with ~18% travel: technically
+  animating, and about one pixel per second on a 90px-blurred gradient — which
+  is indistinguishable from a static page.
+
+  Four stops rather than two, and a continuous rotation, so the movement never
+  stalls at the extremes the way a two-stop ease-in-out does.
+*/
 @keyframes n2s-drift-a {
-  0%, 100% { transform: translate(-50%, 0) scale(1); }
-  50%      { transform: translate(-34%, 14%) scale(1.2); }
+  0%   { transform: translate(-50%, 0) scale(1) rotate(0deg); }
+  25%  { transform: translate(-22%, 16%) scale(1.18) rotate(90deg); }
+  50%  { transform: translate(-58%, 26%) scale(0.94) rotate(180deg); }
+  75%  { transform: translate(-70%, 8%) scale(1.14) rotate(270deg); }
+  100% { transform: translate(-50%, 0) scale(1) rotate(360deg); }
 }
 @keyframes n2s-drift-b {
-  0%, 100% { transform: translate(0, 0) scale(1.05); }
-  50%      { transform: translate(22%, -14%) scale(0.88); }
+  0%   { transform: translate(0, 0) scale(1.05) rotate(0deg); }
+  25%  { transform: translate(38%, -22%) scale(0.85) rotate(-90deg); }
+  50%  { transform: translate(14%, 30%) scale(1.22) rotate(-180deg); }
+  75%  { transform: translate(-16%, 10%) scale(0.95) rotate(-270deg); }
+  100% { transform: translate(0, 0) scale(1.05) rotate(-360deg); }
 }
 @keyframes n2s-drift-c {
-  0%, 100% { transform: translate(0, 0) scale(0.92); }
-  50%      { transform: translate(-18%, 12%) scale(1.22); }
+  0%   { transform: translate(0, 0) scale(0.92) rotate(0deg); }
+  25%  { transform: translate(-30%, 20%) scale(1.2) rotate(120deg); }
+  50%  { transform: translate(-8%, -24%) scale(0.9) rotate(240deg); }
+  75%  { transform: translate(24%, 12%) scale(1.16) rotate(360deg); }
+  100% { transform: translate(0, 0) scale(0.92) rotate(480deg); }
 }
 
 /* The setting asks for no motion, not less of it. */
@@ -244,7 +260,7 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.22;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
   mix-blend-mode: overlay;
 }
@@ -334,7 +350,7 @@ body {
   top: -20%;
   left: -10%;
   background: radial-gradient(circle, color-mix(in oklab, var(--silver) 34%, transparent) 0%, transparent 66%);
-  animation: n2s-plate-a 29s ease-in-out infinite;
+  animation: n2s-plate-a 13s linear infinite;
 }
 
 .n2s-plate::after {
@@ -342,7 +358,7 @@ body {
   bottom: -25%;
   right: -8%;
   background: radial-gradient(circle, color-mix(in oklab, var(--accent) 34%, transparent) 0%, transparent 64%);
-  animation: n2s-plate-b 41s ease-in-out infinite;
+  animation: n2s-plate-b 17s linear infinite;
 }
 
 /* Seeds: offset the phase so plates on one page never move in lockstep. */
@@ -352,12 +368,16 @@ body {
 .n2s-plate--c::after  { animation-delay: -27s; }
 
 @keyframes n2s-plate-a {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(16%, 12%) scale(1.22); }
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%  { transform: translate(26%, 18%) scale(1.25) rotate(120deg); }
+  66%  { transform: translate(-14%, 24%) scale(0.92) rotate(240deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(360deg); }
 }
 @keyframes n2s-plate-b {
-  0%, 100% { transform: translate(0, 0) scale(1.1); }
-  50%      { transform: translate(-14%, -10%) scale(0.9); }
+  0%   { transform: translate(0, 0) scale(1.1) rotate(0deg); }
+  33%  { transform: translate(-28%, -18%) scale(0.88) rotate(-120deg); }
+  66%  { transform: translate(16%, -26%) scale(1.2) rotate(-240deg); }
+  100% { transform: translate(0, 0) scale(1.1) rotate(-360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
