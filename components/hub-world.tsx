@@ -4,7 +4,10 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 /**
- * The world, loaded so it can never delay the page (§4.2).
+ * The assistant's world, loaded so it can never delay the page (§4.2).
+ *
+ * This belongs to the HUB. It is the operator's ecosystem — JARVIS — not the
+ * studio's decoration. It must never be mounted on a public route.
  *
  * Three rules hold the performance contract:
  *  1. `ssr: false` + dynamic import keeps three.js out of the initial payload.
@@ -35,7 +38,7 @@ function webglAvailable(): boolean {
   }
 }
 
-export function HeroWorld() {
+export function HubWorld() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export function HeroWorld() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 -z-10 opacity-0 [animation:n2s-fade_1.6s_var(--ease-expo)_forwards]"
+      className="pointer-events-none fixed inset-0 z-0 opacity-0 [animation:n2s-fade_1.6s_var(--ease-expo)_forwards]"
     >
       <EcosystemCanvas />
     </div>

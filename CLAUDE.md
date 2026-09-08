@@ -10,15 +10,25 @@ prompt wins.
 
 ## What this is
 
-One application with two faces and one world:
+Two faces. One is an assistant, and it runs the other.
 
-- **The front face** (`/`, public) — N2S the studio. A software studio for
-  problems that don't have a product yet. Its own quality is the portfolio,
+- **The back face** (`/hub/*`, Cloudflare Access) — **the ecosystem.** This is
+  the assistant, JARVIS; the 3D orrery is its shell. Private, built for one
+  person, and the interesting thing.
+- **The front face** (`/`, public) — N2S the studio. Fast, editorial,
+  cinematic, with **its own** visual language. Its quality is the portfolio,
   because there are no clients yet.
-- **The back face** (`/hub/*`, Cloudflare Access) — the operator's hub.
 
-They share one persistent 3D world. Signing in opens doors, it does not
-navigate elsewhere. See BUILD-PROMPT §0 and §2.
+**The orrery belongs to the hub alone. Never mount it on a public route** — a
+client seeing the operator's cockpit learns nothing about whether their problem
+can be solved.
+
+The connection runs one way: the hub holds the work, and publishing to the
+public site is flipping a `visibility` flag on a record it already has. The
+site is an *output* of the ecosystem, not a view of it.
+
+The two faces share tokens, typography and the motion vocabulary — same hand —
+but not geometry, not the canvas, not the shell. See BUILD-PROMPT §0 and §2.
 
 ## Current phase
 

@@ -18,21 +18,35 @@
 
 ## 0. THE ONE-LINE GOAL
 
-**One application with two faces and one world.**
+**Two faces. One of them is an assistant, and it runs the other.**
 
-The front face is N2S the studio — what a client sees when they arrive, and the
-proof that we can build what we say we can build. The back face is the operator's
-hub — the real work: projects, tech demos, the household ledger, personal
-systems.
+> **CORRECTION, 2026-09-07.** An earlier draft said the public landing *was*
+> the back portal seen from outside — one shared 3D world spanning both faces.
+> That was wrong and is superseded by this section. The orrery belongs to the
+> hub alone.
 
-They are not two products stapled together. The client-facing landing *is* the
-back portal seen from outside: the same 3D ecosystem, the same motion language,
-the same world. Signing in doesn't take you somewhere else — it opens the doors
-that were locked.
+**The back face is the ecosystem.** It is the assistant — JARVIS — and the 3D
+orrery is its shell. This is where the operator works: projects, demos,
+experiments, the ledger. It is private, it is the interesting thing, and it is
+built for one person.
 
-That continuity is the whole idea. A prospective client who sees the front face
-and later sees the working hub should recognise it as one system. **The demo is
-the product.**
+**The front face is N2S the studio.** What a client sees. It is a fast,
+editorial, cinematic site with its own visual language, and it is **not made of
+the ecosystem**. A prospective client must never be shown the operator's
+orrery — it is somebody else's cockpit, and it says nothing to them about
+whether their problem can be solved.
+
+**The connection runs one way: the assistant drives the site.** The hub is
+where work is recorded, and publishing to the public site is flipping the
+`visibility` flag on a record the hub already holds (§2.3). Over time the
+assistant does more of that job — deciding what is worth showing, drafting it,
+keeping it current. The studio site is an *output* of the ecosystem, not a view
+of it.
+
+So the two faces share **tokens, typography and the motion vocabulary** — they
+are recognisably from the same hand — but not geometry, not the canvas, and not
+the shell. They are one system in the way a workshop and a shopfront are one
+business.
 
 ---
 
@@ -67,8 +81,9 @@ and has already seen fifty agency sites this month.
 3. *How do I start a conversation?* — one obvious, low-friction path.
 
 **Non-negotiable properties:**
-- Loads and is readable **before any WebGL initialises**. The 3D is an
-  enhancement layered onto a page that already works.
+- **No orrery, and no shared canvas.** The front face has its own visual
+  language — cinematic, editorial, glass and type. Any 3D it uses is its own
+  and must serve the pitch, not display the operator's cockpit.
 - Fully server-rendered, crawlable content. A search engine and a screen reader
   both get the complete story with zero JavaScript.
 - Works on a phone, on a throttled connection, and with
@@ -273,9 +288,10 @@ work — digests, feed refreshes, briefings — depends on that distinction.
 
 ### 4.1 The world is the shell
 
-- The `<Canvas>` mounts **once**, in a layout that spans both faces, and is
-  **never unmounted**. Navigation must not tear down the WebGL context, or the
-  world stops being continuous and becomes a background image.
+- The `<Canvas>` belongs to the **hub only** (§0). It mounts once inside the
+  `/hub` layout and is **never unmounted** while inside the hub, so navigation
+  between modules does not tear down the WebGL context and the world stays
+  continuous. It is never mounted on a public route.
 - **The URL is authoritative.** A pure function maps pathname → which node is
   open and where the camera sits. Deep links, refresh, and browser back all
   land in the right place. `/hub/ledger/spending` opens you *inside* the Ledger
