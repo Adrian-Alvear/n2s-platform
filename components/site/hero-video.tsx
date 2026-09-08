@@ -89,8 +89,21 @@ export function HeroVideo({
     el.addEventListener("timeupdate", onTimeUpdate);
     el.addEventListener("ended", onEnded);
 
+    // A cached video can reach HAVE_FUTURE_DATA before this effect attaches,
+    // so `canplay` never fires again and the fade never starts — the video
+    // sits at opacity 0 forever. Catch that case explicitly.
+    if (el.readyState >= 3) onCanPlay();
+
+    // Failsafe: rAF does not run in a hidden document, and autoplay can be
+    // refused. Neither should be able to leave the video permanently
+    // invisible, so force it visible if the fade has not arrived.
+    const failsafe = window.setTimeout(() => {
+      if (Number(el.style.opacity || "0") === 0) el.style.opacity = "1";
+    }, 2500);
+
     return () => {
       cancelAnimationFrame(raf.current);
+      window.clearTimeout(failsafe);
       el.removeEventListener("canplay", onCanPlay);
       el.removeEventListener("timeupdate", onTimeUpdate);
       el.removeEventListener("ended", onEnded);
@@ -103,7 +116,8 @@ export function HeroVideo({
     <video
       ref={ref}
       className="absolute inset-0 h-full w-full object-cover"
-      style={{ opacity: 0 }}
+      /* Bias the crop downward: the interesting content sits low in frame. */
+      style={{ opacity: 0, objectPosition: "center 62%" }}
       src={src}
       poster={poster}
       muted

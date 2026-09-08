@@ -19,12 +19,22 @@ export default function Home() {
   return (
     <main>
       {/* 1 — HERO */}
-      <section className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
-        {/* Video if we have one; otherwise the CSS atmosphere carries the hero. */}
-        <div aria-hidden className="n2s-backdrop overflow-hidden">
+      <section className="relative w-full overflow-hidden">
+        {/*
+          Media is full-bleed across the viewport; content stays in the reading
+          column. The section itself must NOT be max-width constrained, or the
+          video renders as a box in the middle of the page.
+        */}
+        <div aria-hidden className="absolute inset-0 overflow-hidden">
           <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
+          {/* Legibility scrim, and a fade so the clip dissolves into the page
+              rather than ending on a hard edge. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
+          <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[var(--background)]" />
         </div>
         <SiteBackdrop />
+
+      <div className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
 
         <div className="n2s-above n2s-reveal-mask max-w-3xl">
           <h1 className="font-display text-5xl leading-[1.02] tracking-[-0.02em] text-balance sm:text-7xl">
@@ -55,6 +65,7 @@ export default function Home() {
             How we work →
           </Link>
         </div>
+      </div>
       </section>
 
       {/* 2 — STATEMENT */}

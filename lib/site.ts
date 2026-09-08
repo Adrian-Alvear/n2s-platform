@@ -85,5 +85,5 @@ export const PRINCIPLES = [
 export const HERO_VIDEO =
   process.env.NODE_ENV === "production"
     ? "" // Set to "/hero.mp4" once an owned clip is in public/.
-    : "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_063509_7d167302-4fd4-480b-8260-18ab572333d4.mp4";
+    : "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260411_104032_69319010-2458-492b-b04d-b40a5dfa4482.mp4";
 export const HERO_POSTER = "";
