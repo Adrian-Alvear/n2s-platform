@@ -44,8 +44,7 @@ export const AUDIENCE = [
 export const FOUNDER = {
   name: "Adrian Alvear",
   role: "Founder",
-  /** Drop the headshot at public/brand/adrian.jpg, then set this to that path. */
-  photo: "",
+  photo: "/brand/adrian.jpg",
   /** From LinkedIn — paste the About text here. Renders nothing while empty. */
   bio: "",
 } as const;
