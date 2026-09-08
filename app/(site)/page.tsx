@@ -1,64 +1,98 @@
 import Link from "next/link";
 import { AUDIENCE, SERVICES, SITE } from "@/lib/site";
 import { labPieces } from "@/lib/content";
+import { Reveal } from "@/components/reveal";
+import { GlassLink } from "@/components/glass-link";
 
 /**
- * Server component, no client JavaScript. Content paints first, always —
- * the 3D world layers on top of this in Phase 2 (§4.2).
+ * Server component. Content is server-rendered and readable with no
+ * JavaScript; motion is layered on top of a page that already works (§4.2).
  */
 export default function Home() {
   const lab = labPieces();
 
   return (
     <main className="mx-auto max-w-5xl px-6">
-      {/* Hero — the positioning sentence, verbatim. No AI in it (§2.1). */}
-      <section className="py-20 sm:py-32">
+      {/*
+        Hero. Entrance is staged on load, not on scroll — it is already in
+        view. Stagger is BETWEEN elements; within each, everything crossfades
+        together (§5.2).
+      */}
+      <section className="flex min-h-[72vh] flex-col justify-center py-20">
         <div className="n2s-reveal-mask max-w-3xl">
-          <h1 className="font-display text-5xl leading-[1.05] text-balance sm:text-7xl">
+          <h1 className="font-display text-5xl leading-[1.02] tracking-[-0.02em] text-balance sm:text-7xl">
             {SITE.positioning}
           </h1>
         </div>
-        <div aria-hidden className="n2s-draw mt-12 h-px w-24 bg-accent" />
+
+        <p
+          className="n2s-rise mt-8 max-w-xl text-base leading-relaxed text-muted"
+          style={{ animationDelay: "160ms" }}
+        >
+          Development-led, end to end. We take the problem from the first
+          conversation to the thing that runs.
+        </p>
+
+        <div
+          className="n2s-settle mt-12 flex flex-wrap items-center gap-4"
+          style={{ animationDelay: "320ms" }}
+        >
+          <GlassLink href={`mailto:${SITE.email}`} external>
+            Start a conversation
+          </GlassLink>
+          <Link
+            href="/studio"
+            className="font-mono px-2 text-xs tracking-widest text-muted uppercase transition-colors hover:text-foreground"
+          >
+            How we work →
+          </Link>
+        </div>
+
+        <div
+          aria-hidden
+          className="n2s-draw mt-20 h-px w-full bg-rule"
+          style={{ animationDelay: "480ms" }}
+        />
       </section>
 
       {/* What we do */}
-      <section className="py-16">
+      <Reveal as="section" className="py-20">
         <h2 className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
           What we do
         </h2>
-        <dl className="mt-10 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-          {SERVICES.map((service) => (
-            <div key={service.title}>
-              <dt className="font-display text-2xl">{service.title}</dt>
-              <dd className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
+        <dl className="mt-12 grid gap-x-12 gap-y-12 sm:grid-cols-2">
+          {SERVICES.map((service, i) => (
+            <Reveal key={service.title} delay={i * 90}>
+              <dt className="font-display text-3xl">{service.title}</dt>
+              <dd className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
                 {service.body}
               </dd>
-            </div>
+            </Reveal>
           ))}
         </dl>
-      </section>
+      </Reveal>
 
-      {/* Who it's for */}
-      <section className="py-16">
+      {/* Who we work with */}
+      <Reveal as="section" className="py-20">
         <h2 className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
           Who we work with
         </h2>
-        <ul className="mt-8 space-y-4">
-          {AUDIENCE.map((line) => (
-            <li key={line} className="flex gap-4 text-lg">
-              <span aria-hidden className="mt-3 h-px w-6 shrink-0 bg-accent" />
-              <span className="text-balance">{line}</span>
-            </li>
+        <ul className="mt-10 space-y-6">
+          {AUDIENCE.map((line, i) => (
+            <Reveal as="li" key={line} delay={i * 90} className="flex gap-5">
+              <span aria-hidden className="mt-3.5 h-px w-8 shrink-0 bg-accent" />
+              <span className="text-lg text-balance">{line}</span>
+            </Reveal>
           ))}
         </ul>
-      </section>
+      </Reveal>
 
       {/*
-        Selected work. Renders ONLY when there is work to show — a section
-        that announces its own emptiness is §2.3 failure mode #1.
+        Selected work renders ONLY when there is work to show. A section that
+        announces its own absence is §2.3 failure mode #1.
       */}
       {lab.length > 0 && (
-        <section className="py-16">
+        <Reveal as="section" className="py-20">
           <div className="flex items-baseline justify-between">
             <h2 className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
               Selected work
@@ -70,23 +104,25 @@ export default function Home() {
               All work →
             </Link>
           </div>
-          <ul className="mt-10 space-y-10">
-            {lab.slice(0, 3).map((piece) => (
-              <li key={piece.slug}>
+          <ul className="mt-12 space-y-12">
+            {lab.slice(0, 3).map((piece, i) => (
+              <Reveal as="li" key={piece.slug} delay={i * 90}>
                 <Link href={`/lab/${piece.slug}`} className="group block">
                   <h3 className="font-display text-3xl transition-colors group-hover:text-accent">
                     {piece.title}
                   </h3>
-                  <p className="mt-2 max-w-xl text-sm text-muted">{piece.summary}</p>
+                  <p className="mt-2 max-w-xl text-sm text-muted">
+                    {piece.summary}
+                  </p>
                 </Link>
-              </li>
+              </Reveal>
             ))}
           </ul>
-        </section>
+        </Reveal>
       )}
 
       {/* Contact — one path, no form (§2.1) */}
-      <section className="py-24">
+      <Reveal as="section" className="py-28">
         <h2 className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
           Start a conversation
         </h2>
@@ -96,7 +132,7 @@ export default function Home() {
         >
           {SITE.email}
         </a>
-      </section>
+      </Reveal>
     </main>
   );
 }

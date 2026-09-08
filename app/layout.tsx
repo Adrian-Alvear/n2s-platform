@@ -27,7 +27,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${text.variable} ${numeric.variable}`}>
+      <body
+        className={`${display.variable} ${text.variable} ${numeric.variable} n2s-grain`}
+      >
+        {/* Procedural atmosphere — not video (§8). Phase 2 replaces this
+            with the real nebula shader behind the same layer. */}
+        <div aria-hidden className="n2s-atmosphere" />
         {children}
       </body>
     </html>
