@@ -53,6 +53,7 @@ export const REAL_WORK: Work[] = [];
 const DEV_FIXTURES: Work[] = [
   {
     slug: "cinematic-landing-study",
+    href: "/demo/securify",
     title: "Cinematic landing study",
     summary:
       "A dark, video-led landing page built to work out the motion and glass vocabulary.",
@@ -70,6 +71,7 @@ const DEV_FIXTURES: Work[] = [
   },
   {
     slug: "orrery",
+    href: "/hub",
     title: "Orrery",
     summary:
       "A navigable solar system driven by real planetary positions, used as an application shell.",
@@ -87,6 +89,7 @@ const DEV_FIXTURES: Work[] = [
   },
   {
     slug: "recurring-costs",
+    href: "/demo/portfolio",
     title: "Recurring cost detection",
     summary:
       "Recovers a household's real monthly commitments from six months of raw transactions.",

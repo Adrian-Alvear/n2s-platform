@@ -82,5 +82,8 @@ export const PRINCIPLES = [
  * Mixkit all permit commercial use), footage generated on a tool whose output
  * is ours, or a render of our own work. Never hotlink someone else's CDN.
  */
-export const HERO_VIDEO = "";
+export const HERO_VIDEO =
+  process.env.NODE_ENV === "production"
+    ? "" // Set to "/hero.mp4" once an owned clip is in public/.
+    : "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_063509_7d167302-4fd4-480b-8260-18ab572333d4.mp4";
 export const HERO_POSTER = "";

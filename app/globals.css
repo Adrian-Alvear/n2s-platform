@@ -389,3 +389,12 @@ body {
   font-style: italic;
   color: color-mix(in oklab, var(--foreground) 55%, transparent);
 }
+
+/* Demo-only: tight display setting used by the securify study. */
+.hero-title {
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+/* Demo-only: pixel/bitmap face used by the portfolio study. */
+.font-pixel { font-family: "basis33", monospace; }
