@@ -304,3 +304,68 @@ body {
 
 /* Anything that must sit over a backdrop. */
 .n2s-above { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------------------
+   Motion plates — the media slots.
+   The reference fills these with hosted video. These are generated instead:
+   layered drifting gradients over the void, so they cost no request, no
+   decode, and belong to us. Each plate takes a seed so no two look alike.
+   --------------------------------------------------------------------------- */
+
+.n2s-plate {
+  position: relative;
+  overflow: hidden;
+  background: var(--void);
+  isolation: isolate;
+}
+
+.n2s-plate::before,
+.n2s-plate::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  filter: blur(60px);
+  will-change: transform;
+}
+
+.n2s-plate::before {
+  width: 90%;
+  top: -20%;
+  left: -10%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 34%, transparent) 0%, transparent 66%);
+  animation: n2s-plate-a 29s ease-in-out infinite;
+}
+
+.n2s-plate::after {
+  width: 70%;
+  bottom: -25%;
+  right: -8%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 34%, transparent) 0%, transparent 64%);
+  animation: n2s-plate-b 41s ease-in-out infinite;
+}
+
+/* Seeds: offset the phase so plates on one page never move in lockstep. */
+.n2s-plate--b::before { animation-delay: -9s; }
+.n2s-plate--b::after  { animation-delay: -14s; }
+.n2s-plate--c::before { animation-delay: -19s; }
+.n2s-plate--c::after  { animation-delay: -27s; }
+
+@keyframes n2s-plate-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(16%, 12%) scale(1.22); }
+}
+@keyframes n2s-plate-b {
+  0%, 100% { transform: translate(0, 0) scale(1.1); }
+  50%      { transform: translate(-14%, -10%) scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .n2s-plate::before, .n2s-plate::after { animation: none; }
+}
+
+/* Emphasis inside display type: same size, italic, stepped back in tone. */
+.n2s-em {
+  font-style: italic;
+  color: color-mix(in oklab, var(--foreground) 55%, transparent);
+}
