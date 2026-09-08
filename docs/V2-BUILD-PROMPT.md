@@ -707,6 +707,30 @@ motion library. Nothing visual yet beyond a correct, empty, well-typed shell.
 content, fully server-rendered, no WebGL at all. This must stand on its own as a
 good studio site. If it doesn't work here, 3D won't save it.
 
+> **Inventory, as of 2026-09-07 — read this before searching.** A scan of the
+> machine and the GitLab remote found exactly **one** project of Adrian's:
+> `n2s-platform` itself. `~/projects/gnhf` is Kun Chen's published npm tool that
+> Adrian uses, not his work. `~/projects/n2s-playwright` is an empty directory.
+> The GitLab remote `n2s3/n2s-platform` is this same repo (`main` plus three
+> Renovate branches, no other work); the `n2s3` group is private and could not be
+> enumerated. **Conclusion: the Lab set is built, not curated.** Do not re-run
+> this search — ask Adrian instead.
+>
+> **The unbundling strategy.** v1 already contains several differently-shaped
+> projects fused into one app, and separating them is far cheaper than building
+> from zero: the **orrery** (VSOP87 ephemeris driving a WebGL shell), the **news
+> aggregator** (multi-source RSS parsed at the edge, og:image extraction), the
+> **recurring-cost engine** (recovering monthly commitments from six months of
+> ledger history — a real inference problem and the most interesting thing in the
+> repo), and the **hub** itself.
+>
+> **The catch, and it matters.** All four come from one codebase, so a stranger
+> would describe the whole set as "pieces of his personal dashboard" — which
+> fails the §2.4 selection rule and proves range only weakly. **At least one Lab
+> piece must visibly not belong to that world**: different audience, different
+> shape, and ideally something that looks like work a client would have paid for.
+> That piece is the one that converts.
+>
 > **Phase 1, task one — choose the Lab set.** Before any page is written, take
 > an inventory of every existing, abandoned and half-built project, and select
 > **three to five** to finish to a deployable standard. This is the launch
