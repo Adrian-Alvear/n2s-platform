@@ -13,7 +13,7 @@
     "cf-build": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "gates": "npm test && npm run typecheck && npm run cf-build"
+    "gates": "npm test && npm run cf-build && npm run typecheck"
   },
   "dependencies": {
     "clsx": "^2.1.1",
