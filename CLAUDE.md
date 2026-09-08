@@ -22,13 +22,16 @@ navigate elsewhere. See BUILD-PROMPT §0 and §2.
 
 ## Current phase
 
-**Phase 0 — Foundation.** Scaffold only: Next.js + Workers + OpenNext, design
-tokens, typography, the motion library, and the Access gate. No real content,
-no WebGL yet.
+**Phase 2 — the world.** The orrery is ported from v1 and running behind the
+hero. Phases 0 and 1 are done: foundation, tokens, motion library, Access
+gate, and the full front-face shell (`/`, `/lab`, `/studio`, `/contact`).
 
-**Next up: Phase 1 — the front face, static.** Its first task is choosing the
-Lab set; see BUILD-PROMPT §11. Do not start Phase 2 (the 3D world) before
-Phase 1 stands on its own.
+**Still open:** the Lab set — three to five real, working, deployed pieces.
+The registry in `lib/content.ts` is empty by design and every section driven
+by it renders nothing rather than a placeholder. See BUILD-PROMPT §2.3.
+
+**Next: Phase 3 — the hub.** Re-attach node labels and dive targets to the
+ported world, add `ModuleFrame`, and design the mobile tab bar.
 
 ## Stack
 

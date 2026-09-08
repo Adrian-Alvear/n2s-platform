@@ -3,6 +3,7 @@ import { AUDIENCE, SERVICES, SITE } from "@/lib/site";
 import { labPieces } from "@/lib/content";
 import { Reveal } from "@/components/reveal";
 import { GlassLink } from "@/components/glass-link";
+import { HeroWorld } from "@/components/hero-world";
 
 /**
  * Server component. Content is server-rendered and readable with no
@@ -18,7 +19,10 @@ export default function Home() {
         view. Stagger is BETWEEN elements; within each, everything crossfades
         together (§5.2).
       */}
-      <section className="flex min-h-[72vh] flex-col justify-center py-20">
+      <section className="relative flex min-h-[82vh] flex-col justify-center py-20">
+        {/* The world. Loads after the text is painted and readable (§4.2). */}
+        <HeroWorld />
+
         <div className="n2s-reveal-mask max-w-3xl">
           <h1 className="font-display text-5xl leading-[1.02] tracking-[-0.02em] text-balance sm:text-7xl">
             {SITE.positioning}
