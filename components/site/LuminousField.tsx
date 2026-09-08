@@ -5,24 +5,28 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
- * A luminous field receding into darkness.
+ * A luminous ground plane receding to a horizon.
  *
- * The front face's own visual language — deliberately NOT the orrery, which
- * belongs to the hub (§0). The reference is a single warm light standing in a
- * vast field of glowing points, everything else swallowed by black.
+ * The reference is not a scattering of dots — it is a dense FIELD seen from
+ * standing height, lit in a pool around a figure and falling to pure black at
+ * the edges. Three things carry that read, and an earlier version had none of
+ * them:
  *
- * Built as one Points system, so the whole field is a single draw call. The
- * per-point drift happens in the vertex shader, which means the animation
- * costs nothing on the CPU and nothing in React.
- *
- * Colour comes from the house palette rather than the reference's blue: points
- * run cool silver at the rim and warm toward the centre, so the field reads as
- * lit by one warm source — the same monochrome-plus-one-warm rule as §5.1.
+ *  1. GROUND PLANE, not a disc. Points spread far in z so the field recedes to
+ *     a horizon instead of sitting in a ring around the camera.
+ *  2. BOKEH. Near points are large and very soft; distant ones are small and
+ *     sharp. That depth cue is most of what makes the reference read as
+ *     photographed rather than drawn.
+ *  3. COOL FIELD, WARM POOL. The blooms are blue-violet; only what the light
+ *     reaches goes warm. A uniformly warm field reads as haze.
  */
 
-const COUNT = 22000;
-/** Field radius. Points thin out toward the edge and vanish into the void. */
-const RADIUS = 26;
+const COUNT = 30000;
+/** Half-width of the plane. */
+const SPREAD_X = 34;
+/** How far the field runs away from the camera. */
+const DEPTH_FAR = 62;
+const DEPTH_NEAR = 9;
 
 const VERT = /* glsl */ `
   uniform float uTime;
@@ -31,61 +35,69 @@ const VERT = /* glsl */ `
   attribute float aScale;
   varying float vGlow;
   varying float vSeed;
+  varying float vNear;
 
   void main() {
     vec3 p = position;
 
-    // Two sine waves at unrelated periods, so the field never pulses in unison.
-    p.y += sin(uTime * 0.35 + aSeed * 6.2831) * 0.10
-         + sin(uTime * 0.21 + aSeed * 12.566) * 0.06;
+    // Blooms breathe on unrelated periods so the field never pulses together.
+    p.y += sin(uTime * 0.28 + aSeed * 6.2831) * 0.055
+         + sin(uTime * 0.17 + aSeed * 12.566) * 0.035;
 
-    float dist = length(p.xz);
-
-    // Brightness falls off from the centre — this is what makes it read as one
-    // light source rather than an evenly lit plane.
-    float falloff = 1.0 - smoothstep(0.0, RADIUS_F, dist);
-    vGlow = pow(falloff, 2.2);
+    // The light pool is centred on the figure at the origin.
+    float d = length(p.xz);
+    vGlow = pow(1.0 - smoothstep(0.0, POOL_F, d), 2.0);
     vSeed = aSeed;
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    // Size attenuates with depth so the field has real perspective.
-    gl_PointSize = aScale * uBoot * (54.0 / -mv.z) * (0.85 + vGlow * 2.2);
+
+    // Near points are large and soft — the depth cue that sells the frame.
+    float depth = -mv.z;
+    vNear = 1.0 - smoothstep(2.0, 26.0, depth);
+    gl_PointSize = aScale * uBoot * (150.0 / depth) * (0.5 + vNear * 2.2);
+
     gl_Position = projectionMatrix * mv;
   }
 `;
 
 const FRAG = /* glsl */ `
   uniform vec3 uCool;
+  uniform vec3 uMid;
   uniform vec3 uWarm;
   uniform float uBoot;
   varying float vGlow;
   varying float vSeed;
+  varying float vNear;
 
   void main() {
-    // Round, soft-edged point. Square sprites read as digital noise.
     vec2 c = gl_PointCoord - 0.5;
     float d = length(c);
     if (d > 0.5) discard;
-    float alpha = smoothstep(0.5, 0.06, d);
 
-    // Warm toward the centre, cool at the rim.
-    vec3 col = mix(uCool, uWarm, vGlow * 0.85);
+    // Near blooms defocus into soft discs; far ones stay tight.
+    float edge = mix(0.30, 0.02, vNear);
+    float alpha = smoothstep(0.5, edge, d);
 
-    // A minority of points burn brighter, so the field has texture rather than
-    // a uniform wash.
-    float spark = step(0.93, fract(vSeed * 97.31)) * 0.9;
+    // Blue-violet field; warm only where the light reaches.
+    vec3 col = mix(uCool, uMid, fract(vSeed * 31.7));
+    col = mix(col, uWarm, smoothstep(0.15, 0.95, vGlow));
 
-    // toneMapped:false plus a value pushed past 1.0 is what Bloom catches.
-    gl_FragColor = vec4(col * (1.0 + spark) * (1.4 + vGlow * 4.0), alpha * (0.75 + vGlow) * uBoot);
+    // A minority burn brighter, so the field has texture rather than a wash.
+    float spark = step(0.955, fract(vSeed * 97.31)) * 1.4;
+
+    float lum = (0.30 + vGlow * 3.4) * (1.0 + spark);
+    gl_FragColor = vec4(col * lum, alpha * (0.30 + vGlow * 0.9) * uBoot);
   }
 `;
 
 export function LuminousField({
-  cool = "#dfe4ec",
-  warm = "#f0d9a8",
+  cool = "#3d4fa8",
+  mid = "#7d6fd0",
+  warm = "#f2e2bd",
   reducedMotion = false,
 }: {
   cool?: string;
+  mid?: string;
   warm?: string;
   reducedMotion?: boolean;
 }) {
@@ -99,17 +111,15 @@ export function LuminousField({
     const scale = new Float32Array(COUNT);
 
     for (let i = 0; i < COUNT; i++) {
-      // sqrt() keeps the areal density even; without it everything clumps
-      // at the centre.
-      // pow < 0.5 biases toward the centre, so density falls off with the
-      // light rather than staying uniform to the horizon.
-      const r = Math.pow(Math.random(), 0.62) * RADIUS;
-      const a = Math.random() * Math.PI * 2;
-      pos[i * 3] = Math.cos(a) * r;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.7;
-      pos[i * 3 + 2] = Math.sin(a) * r;
+      // Spread across the plane, denser toward the centre line.
+      const x = (Math.random() - 0.5) * 2;
+      pos[i * 3] = Math.sign(x) * Math.pow(Math.abs(x), 1.3) * SPREAD_X;
+      // Sit on the ground with a little scatter for volume.
+      pos[i * 3 + 1] = Math.random() * 0.34 - 0.05;
+      // Bias toward the far field, so the horizon reads dense.
+      pos[i * 3 + 2] = DEPTH_NEAR - Math.pow(Math.random(), 0.75) * DEPTH_FAR;
       seed[i] = Math.random();
-      scale[i] = 0.6 + Math.random() * 1.1;
+      scale[i] = 0.5 + Math.random() * 1.3;
     }
 
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -123,6 +133,7 @@ export function LuminousField({
       uTime: { value: 0 },
       uBoot: { value: 0 },
       uCool: { value: new THREE.Color(cool) },
+      uMid: { value: new THREE.Color(mid) },
       uWarm: { value: new THREE.Color(warm) },
     }),
     [], // eslint-disable-line react-hooks/exhaustive-deps
@@ -133,18 +144,15 @@ export function LuminousField({
       uniforms.uBoot.value = 1;
       return;
     }
-    // The field resolves out of darkness rather than popping in.
-    boot.current = Math.min(1, boot.current + delta / 2.4);
+    boot.current = Math.min(1, boot.current + delta / 2.8);
     uniforms.uBoot.value = 1 - Math.pow(1 - boot.current, 3);
     uniforms.uTime.value += delta;
-    // Barely-perceptible rotation: enough that the field is never static.
-    points.current.rotation.y += delta * 0.008;
   });
 
   return (
     <points ref={points} geometry={geometry} frustumCulled={false}>
       <shaderMaterial
-        vertexShader={VERT.replace("RADIUS_F", RADIUS.toFixed(1))}
+        vertexShader={VERT.replace("POOL_F", "13.0")}
         fragmentShader={FRAG}
         uniforms={uniforms}
         transparent

@@ -25,18 +25,18 @@ export function FieldCanvas() {
   return (
     <Canvas
       // Low and close to the ground, so the field recedes to a horizon.
-      camera={{ position: [0, 1.35, 7.5], fov: 46 }}
+      camera={{ position: [0, 1.55, 6.4], fov: 50 }}
       // A backdrop behind type: 2x costs double the fill rate and shows nothing.
       dpr={[1, 1.5]}
       gl={{ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
       style={{ background: "transparent" }}
-      onCreated={({ camera }) => camera.lookAt(0, 1.0, 0)}
+      onCreated={({ camera }) => camera.lookAt(0, 1.05, -14)}
     >
       <Figure reducedMotion={reduced} />
       <LuminousField reducedMotion={reduced} />
       <EffectComposer>
-        <Bloom intensity={0.9} luminanceThreshold={0.28} luminanceSmoothing={0.3} mipmapBlur />
-        <Vignette eskil={false} offset={0.35} darkness={0.85} />
+        <Bloom intensity={1.25} luminanceThreshold={0.2} luminanceSmoothing={0.3} mipmapBlur />
+        <Vignette eskil={false} offset={0.18} darkness={1.05} />
       </EffectComposer>
     </Canvas>
   );

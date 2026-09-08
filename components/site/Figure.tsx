@@ -38,7 +38,7 @@ export function Figure({ reducedMotion = false }: { reducedMotion?: boolean }) {
     group.current.rotation.y = Math.sin(t * 0.12) * 0.09;
   });
 
-  const C = "#f4f6fa";
+  const C = "#eef2fa";
 
   return (
     <group ref={group} position={[0, 0, 0]}>
@@ -57,10 +57,15 @@ export function Figure({ reducedMotion = false }: { reducedMotion?: boolean }) {
       <Wire geometry={geo.shin} color={C} intensity={1.8} position={[0.12, 0.36, 0]} />
 
       {/* The figure IS the light: the field's falloff is centred here. */}
-      <pointLight position={[0, 1.1, 0]} intensity={9} distance={14} color="#f0d9a8" />
-      <mesh position={[0, 1.2, 0]}>
-        <sphereGeometry args={[0.55, 20, 20]} />
-        <meshBasicMaterial color="#f0d9a8" toneMapped={false} transparent opacity={0.07} />
+      <pointLight position={[0, 1.1, 0]} intensity={22} distance={22} decay={1.6} color="#f2e2bd" />
+      {/* Soft bloom around the body — the figure glows rather than being lit. */}
+      <mesh position={[0, 1.1, 0]}>
+        <sphereGeometry args={[0.85, 20, 20]} />
+        <meshBasicMaterial color="#f2e2bd" toneMapped={false} transparent opacity={0.05} />
+      </mesh>
+      <mesh position={[0, 1.1, 0]}>
+        <sphereGeometry args={[1.9, 20, 20]} />
+        <meshBasicMaterial color="#8f9ad8" toneMapped={false} transparent opacity={0.03} />
       </mesh>
     </group>
   );
