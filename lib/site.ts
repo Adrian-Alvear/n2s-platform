@@ -88,7 +88,7 @@ export const PRINCIPLES = [
  *   "video" — HERO_VIDEO below. Reference footage; dev-only until owned.
  *   "none"  — CSS atmosphere alone.
  */
-export const HERO_MODE: "coded" | "video" | "none" = "coded";
+export const HERO_MODE: "coded" | "video" | "none" = "none";
 
 export const HERO_VIDEO =
   process.env.NODE_ENV === "production"

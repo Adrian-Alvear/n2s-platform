@@ -71,9 +71,9 @@ export default function Home() {
           </GlassLink>
           <Link
             href="/studio"
-            className="font-mono px-2 text-xs tracking-widest text-muted uppercase transition-colors hover:text-foreground"
+            className="n2s-link font-mono px-2 text-xs tracking-widest text-muted uppercase hover:text-foreground"
           >
-            How we work →
+            How we work <span className="n2s-arrow">→</span>
           </Link>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function Home() {
         <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
           {SERVICES.map((service, i) => (
             <Reveal key={service.title} delay={i * 120}>
-              <div className="liquid-glass h-full rounded-3xl p-6 md:p-8">
+              <div className="liquid-glass n2s-card h-full rounded-3xl p-6 md:p-8">
                 <p className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
                   0{i + 1}
                 </p>
@@ -208,16 +208,16 @@ export default function Home() {
               </h2>
               <Link
                 href="/lab"
-                className="font-mono text-xs text-muted transition-colors hover:text-foreground"
+                className="n2s-link font-mono text-xs text-muted hover:text-foreground"
               >
-                All work →
+                All work <span className="n2s-arrow">→</span>
               </Link>
             </div>
           </Reveal>
           <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
             {lab.slice(0, 4).map((piece, i) => (
               <Reveal key={piece.slug} delay={i * 120}>
-                <Link href={`/lab/${piece.slug}`} className="group block">
+                <Link href={`/lab/${piece.slug}`} className="group n2s-card block">
                   <MotionPlate
                     seed="c"
                     className="aspect-video w-full rounded-3xl"
@@ -241,7 +241,7 @@ export default function Home() {
           </h2>
           <a
             href={`mailto:${SITE.email}`}
-            className="font-display mt-8 inline-block text-2xl break-all underline decoration-rule underline-offset-8 transition-colors hover:decoration-accent sm:text-3xl"
+            className="n2s-link font-display mt-8 inline-block text-2xl break-all sm:text-3xl"
           >
             {SITE.email}
           </a>

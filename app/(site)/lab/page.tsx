@@ -21,7 +21,7 @@ export default function Lab() {
         <ul className="mt-16 space-y-12">
           {pieces.map((piece) => (
             <li key={piece.slug}>
-              <Link href={`/lab/${piece.slug}`} className="group block">
+              <Link href={`/lab/${piece.slug}`} className="group n2s-card block">
                 <div className="flex items-baseline gap-4">
                   <h2 className="font-display text-3xl transition-colors group-hover:text-accent">
                     {piece.title}

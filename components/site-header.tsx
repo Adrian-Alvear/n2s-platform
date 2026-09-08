@@ -11,13 +11,13 @@ export function SiteHeader() {
         {SITE.name}
       </Link>
       <nav className="flex gap-6 font-mono text-xs tracking-wide text-muted uppercase">
-        <Link href="/lab" className="transition-colors hover:text-foreground">
+        <Link href="/lab" className="n2s-link hover:text-foreground">
           Lab
         </Link>
-        <Link href="/studio" className="transition-colors hover:text-foreground">
+        <Link href="/studio" className="n2s-link hover:text-foreground">
           Studio
         </Link>
-        <Link href="/contact" className="transition-colors hover:text-foreground">
+        <Link href="/contact" className="n2s-link hover:text-foreground">
           Contact
         </Link>
       </nav>

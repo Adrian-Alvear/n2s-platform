@@ -4,7 +4,6 @@ import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
-import { Figure } from "./Figure";
 import { LuminousField } from "./LuminousField";
 
 /**
@@ -32,7 +31,6 @@ export function FieldCanvas() {
       style={{ background: "transparent" }}
       onCreated={({ camera }) => camera.lookAt(0, 1.05, -14)}
     >
-      <Figure reducedMotion={reduced} />
       <LuminousField reducedMotion={reduced} />
       <EffectComposer>
         <Bloom intensity={1.25} luminanceThreshold={0.2} luminanceSmoothing={0.3} mipmapBlur />

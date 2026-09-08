@@ -17,7 +17,7 @@ export default function Contact() {
       </p>
       <a
         href={`mailto:${SITE.email}`}
-        className="font-display mt-10 inline-block text-3xl break-all underline decoration-rule underline-offset-8 transition-colors hover:decoration-accent sm:text-4xl"
+        className="n2s-link font-display mt-10 inline-block text-3xl break-all sm:text-4xl"
       >
         {SITE.email}
       </a>

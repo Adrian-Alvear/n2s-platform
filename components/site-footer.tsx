@@ -8,7 +8,7 @@ export function SiteFooter() {
         <p>{SITE.name}</p>
         <a
           href={`mailto:${SITE.email}`}
-          className="transition-colors hover:text-foreground"
+          className="n2s-link hover:text-foreground"
         >
           {SITE.email}
         </a>

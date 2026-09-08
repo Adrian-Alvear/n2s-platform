@@ -398,3 +398,61 @@ body {
 
 /* Demo-only: pixel/bitmap face used by the portfolio study. */
 .font-pixel { font-family: "basis33", monospace; }
+
+/* ---------------------------------------------------------------------------
+   Interaction.
+   CSS-first and deliberately so: everything here works without JavaScript,
+   survives a hidden tab, and cannot be left in a broken state by a failed
+   render. Motion follows §5.2 — one curve, everything crossfading together.
+   --------------------------------------------------------------------------- */
+
+/* Links draw an underline from the left rather than fading one in. */
+.n2s-link {
+  position: relative;
+  transition: color var(--dur) var(--ease);
+}
+.n2s-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.35em;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 420ms var(--ease-expo);
+}
+.n2s-link:hover::after,
+.n2s-link:focus-visible::after { transform: scaleX(1); }
+
+/* Arrows lean into the direction they point. */
+.n2s-arrow { display: inline-block; transition: transform 420ms var(--ease-expo); }
+.n2s-link:hover .n2s-arrow { transform: translateX(0.35em); }
+
+/* Cards lift and warm their edge. */
+.n2s-card {
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .n2s-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 50px -24px color-mix(in oklab, var(--accent) 45%, transparent);
+  }
+}
+
+/* Focus must always be visible — never removed for aesthetics (§8). */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .n2s-card, .n2s-link::after, .n2s-arrow { transition: none; }
+}
