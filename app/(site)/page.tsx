@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { AUDIENCE, PRINCIPLES, SERVICES, SITE } from "@/lib/site";
+import { AUDIENCE, HERO_POSTER, HERO_VIDEO, PRINCIPLES, SERVICES, SITE } from "@/lib/site";
 import { labPieces } from "@/lib/content";
 import { Reveal } from "@/components/reveal";
 import { GlassLink } from "@/components/glass-link";
 import { SiteBackdrop } from "@/components/site-backdrop";
 import { MotionPlate } from "@/components/site/motion-plate";
+import { HeroVideo } from "@/components/site/hero-video";
 
 /**
  * The front face (docs/BUILD-PROMPT.md §2.1).
@@ -19,6 +20,10 @@ export default function Home() {
     <main>
       {/* 1 — HERO */}
       <section className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
+        {/* Video if we have one; otherwise the CSS atmosphere carries the hero. */}
+        <div aria-hidden className="n2s-backdrop overflow-hidden">
+          <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
+        </div>
         <SiteBackdrop />
 
         <div className="n2s-above n2s-reveal-mask max-w-3xl">

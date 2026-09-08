@@ -71,3 +71,16 @@ export const PRINCIPLES = [
     body: "The work is judged by what runs, not by what was presented. Everything in the Lab is live and clickable for exactly that reason.",
   },
 ] as const;
+
+/**
+ * Hero background video.
+ *
+ * EMPTY = no video, and the CSS atmosphere is the backdrop instead. To enable
+ * one, drop a file at `public/hero.mp4` and set this to "/hero.mp4".
+ *
+ * The file must be one WE hold rights to — licensed stock (Pexels, Coverr and
+ * Mixkit all permit commercial use), footage generated on a tool whose output
+ * is ours, or a render of our own work. Never hotlink someone else's CDN.
+ */
+export const HERO_VIDEO = "";
+export const HERO_POSTER = "";
