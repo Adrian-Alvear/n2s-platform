@@ -3,15 +3,21 @@
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
 
+/** Nothing stays hidden longer than this, whatever else goes wrong. */
+const FAILSAFE_MS = 1500;
+
 /**
  * Staged entrance on scroll (docs/BUILD-PROMPT.md §5.2).
  *
- * The content is rendered VISIBLE by the server. This component only hides it
- * once JavaScript has confirmed it can animate it back — so a page with no JS,
- * or a crawler, gets the complete readable page and never a blank div (§4.2).
+ * The server renders content VISIBLE. Script hides it only to animate it back,
+ * so no-JS visitors and crawlers get the whole page (§4.2).
  *
- * Runs once per element, then stops observing. Reduced motion skips the whole
- * mechanism: elements render at rest with no transition at all.
+ * Content visibility must NEVER depend on this working. Three independent
+ * paths reveal an element, so a failure of any one of them cannot leave the
+ * page blank:
+ *   1. already in the viewport at mount   → reveal on the next frame
+ *   2. scrolled into view                 → IntersectionObserver
+ *   3. anything else, including IO never firing → failsafe timer
  */
 export function Reveal({
   children,
@@ -31,15 +37,28 @@ export function Reveal({
     const el = ref.current;
     if (!el || prefersReducedMotion()) return;
 
+    let done = false;
+    const reveal = () => {
+      if (done) return;
+      done = true;
+      el.dataset.reveal = "in";
+    };
+
     el.dataset.reveal = "pending";
     el.style.transitionDelay = `${delay}ms`;
 
-    // Two nested frames: a single frame can coalesce with the class change
-    // and the transition never runs (§7).
+    const inView = () => {
+      const r = el.getBoundingClientRect();
+      return r.top < window.innerHeight && r.bottom > 0;
+    };
+
+    // Two nested frames: a single frame can coalesce with the class change and
+    // the transition never runs (§7).
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
-        observer.observe(el);
+        if (inView()) reveal();
+        else observer.observe(el);
       });
     });
 
@@ -47,20 +66,22 @@ export function Reveal({
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          el.dataset.reveal = "in";
+          reveal();
           observer.unobserve(el);
         }
       },
       { rootMargin: "0px 0px -10% 0px" },
     );
 
+    const failsafe = window.setTimeout(reveal, FAILSAFE_MS);
+
     return () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
+      window.clearTimeout(failsafe);
       observer.disconnect();
-      // Leave nothing behind: an unmount mid-entrance must not strand the
-      // element in its hidden state.
-      delete el.dataset.reveal;
+      // An unmount mid-entrance must not strand the element hidden.
+      if (!done) delete el.dataset.reveal;
       el.style.transitionDelay = "";
     };
   }, [delay]);

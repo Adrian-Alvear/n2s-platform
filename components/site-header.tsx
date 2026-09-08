@@ -3,7 +3,7 @@ import { SITE } from "@/lib/site";
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto flex max-w-5xl items-baseline justify-between px-6 py-8">
+    <header className="mx-auto flex w-full max-w-5xl items-baseline justify-between px-6 py-8">
       <Link
         href="/"
         className="font-mono text-xs tracking-[0.2em] uppercase transition-opacity hover:opacity-70"
