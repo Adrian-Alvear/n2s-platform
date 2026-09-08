@@ -193,7 +193,7 @@ body {
   width: 80%;
   top: -30%;
   left: 50%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 42%, transparent) 0%, transparent 68%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 24%, transparent) 0%, transparent 68%);
   animation: n2s-drift-a 37s ease-in-out infinite;
 }
 
@@ -201,15 +201,17 @@ body {
   width: 65%;
   top: 15%;
   left: -15%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 30%, transparent) 0%, transparent 66%);
+  background: radial-gradient(circle, color-mix(in oklab, var(--platinum) 20%, transparent) 0%, transparent 66%);
   animation: n2s-drift-b 53s ease-in-out infinite;
 }
 
 .n2s-atmosphere > .n2s-aurora {
-  width: 70%;
-  top: 35%;
-  right: -18%;
-  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 28%, transparent) 0%, transparent 70%);
+  /* The single warm source (§5.1). Smaller and dimmer than the cool fields,
+     so it reads as one light in the dark rather than a yellow wash. */
+  width: 46%;
+  top: 42%;
+  right: -10%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 30%, transparent) 0%, transparent 62%);
   animation: n2s-drift-c 71s ease-in-out infinite;
 }
 
