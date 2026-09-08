@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
+import { Figure } from "./Figure";
 import { LuminousField } from "./LuminousField";
 
 /**
@@ -24,26 +25,17 @@ export function FieldCanvas() {
   return (
     <Canvas
       // Low and close to the ground, so the field recedes to a horizon.
-      camera={{ position: [0, 1.5, 13], fov: 46 }}
+      camera={{ position: [0, 1.35, 7.5], fov: 46 }}
       // A backdrop behind type: 2x costs double the fill rate and shows nothing.
       dpr={[1, 1.5]}
       gl={{ antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: true }}
       style={{ background: "transparent" }}
-      onCreated={({ camera }) => camera.lookAt(0, 1.1, 0)}
+      onCreated={({ camera }) => camera.lookAt(0, 1.0, 0)}
     >
-      {/* The single warm source the field is lit by — the thing that makes
-          it read as one light in a void rather than a scattering of dots. */}
-      <mesh position={[0, 1.15, 0]}>
-        <sphereGeometry args={[0.42, 24, 24]} />
-        <meshBasicMaterial color="#f0d9a8" toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 1.15, 0]}>
-        <sphereGeometry args={[1.5, 24, 24]} />
-        <meshBasicMaterial color="#f0d9a8" toneMapped={false} transparent opacity={0.09} />
-      </mesh>
+      <Figure reducedMotion={reduced} />
       <LuminousField reducedMotion={reduced} />
       <EffectComposer>
-        <Bloom intensity={1.4} luminanceThreshold={0.15} luminanceSmoothing={0.3} mipmapBlur />
+        <Bloom intensity={0.9} luminanceThreshold={0.28} luminanceSmoothing={0.3} mipmapBlur />
         <Vignette eskil={false} offset={0.35} darkness={0.85} />
       </EffectComposer>
     </Canvas>

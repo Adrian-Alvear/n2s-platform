@@ -20,9 +20,9 @@ import * as THREE from "three";
  * lit by one warm source — the same monochrome-plus-one-warm rule as §5.1.
  */
 
-const COUNT = 14000;
+const COUNT = 22000;
 /** Field radius. Points thin out toward the edge and vanish into the void. */
-const RADIUS = 46;
+const RADIUS = 26;
 
 const VERT = /* glsl */ `
   uniform float uTime;
@@ -49,7 +49,7 @@ const VERT = /* glsl */ `
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     // Size attenuates with depth so the field has real perspective.
-    gl_PointSize = aScale * uBoot * (58.0 / -mv.z) * (0.55 + vGlow * 1.4);
+    gl_PointSize = aScale * uBoot * (42.0 / -mv.z) * (0.7 + vGlow * 2.0);
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -76,7 +76,7 @@ const FRAG = /* glsl */ `
     float spark = step(0.93, fract(vSeed * 97.31)) * 0.9;
 
     // toneMapped:false plus a value pushed past 1.0 is what Bloom catches.
-    gl_FragColor = vec4(col * (1.0 + spark) * (0.65 + vGlow * 2.6), alpha * (0.45 + vGlow * 0.9) * uBoot);
+    gl_FragColor = vec4(col * (1.0 + spark) * (0.9 + vGlow * 3.2), alpha * (0.55 + vGlow) * uBoot);
   }
 `;
 
