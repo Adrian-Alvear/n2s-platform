@@ -32,7 +32,9 @@ export default function RootLayout({
       >
         {/* Procedural atmosphere — not video (§8). Phase 2 replaces this
             with the real nebula shader behind the same layer. */}
-        <div aria-hidden className="n2s-atmosphere" />
+        <div aria-hidden className="n2s-atmosphere">
+          <div className="n2s-aurora" />
+        </div>
         {children}
       </body>
     </html>

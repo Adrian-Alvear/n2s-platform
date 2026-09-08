@@ -157,19 +157,82 @@ body {
 .n2s-atmosphere {
   position: fixed;
   inset: 0;
+  /* Behind content. A positioned layer at z-index 0 paints ABOVE static
+     block content and would cover the type. */
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(
-      120% 80% at 50% 0%,
-      color-mix(in oklab, var(--accent) 10%, transparent) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      90% 60% at 50% 100%,
-      color-mix(in oklab, var(--accent) 6%, transparent) 0%,
-      transparent 70%
-    );
+  overflow: hidden;
+}
+
+/*
+  Continuous ambient motion, CSS only.
+
+  This is the page's living backdrop and it must NOT depend on WebGL: the
+  canvas is an enhancement on top of this, never a prerequisite for the page
+  feeling alive.
+
+  Three luminous fields drift on unrelated periods (37s / 53s / 71s — coprime,
+  so the composite never repeats within a visit) and never translate far enough
+  to drag an edge into frame.
+*/
+.n2s-atmosphere::before,
+.n2s-atmosphere::after,
+.n2s-atmosphere > .n2s-aurora {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+/* Sized in PERCENT of the fixed inset:0 parent, never vw/vh. Viewport units
+   resolve to zero in some embedded contexts, which silently collapses the
+   whole layer to nothing. */
+.n2s-atmosphere::before {
+  width: 80%;
+  top: -30%;
+  left: 50%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 42%, transparent) 0%, transparent 68%);
+  animation: n2s-drift-a 37s ease-in-out infinite;
+}
+
+.n2s-atmosphere::after {
+  width: 65%;
+  top: 15%;
+  left: -15%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--silver) 30%, transparent) 0%, transparent 66%);
+  animation: n2s-drift-b 53s ease-in-out infinite;
+}
+
+.n2s-atmosphere > .n2s-aurora {
+  width: 70%;
+  top: 35%;
+  right: -18%;
+  background: radial-gradient(circle, color-mix(in oklab, var(--accent) 28%, transparent) 0%, transparent 70%);
+  animation: n2s-drift-c 71s ease-in-out infinite;
+}
+
+/* Periods are coprime (37 / 53 / 71 seconds) so the composite never repeats
+   within a visit. Translations are in percent of each blob's own size. */
+@keyframes n2s-drift-a {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50%      { transform: translate(-34%, 14%) scale(1.2); }
+}
+@keyframes n2s-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1.05); }
+  50%      { transform: translate(22%, -14%) scale(0.88); }
+}
+@keyframes n2s-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(0.92); }
+  50%      { transform: translate(-18%, 12%) scale(1.22); }
+}
+
+/* The setting asks for no motion, not less of it. */
+@media (prefers-reduced-motion: reduce) {
+  .n2s-atmosphere::before,
+  .n2s-atmosphere::after,
+  .n2s-atmosphere > .n2s-aurora { animation: none; }
 }
 
 /* Tiled fractal noise. Inline SVG so there is no extra request. */
