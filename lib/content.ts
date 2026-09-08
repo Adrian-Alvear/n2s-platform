@@ -70,6 +70,24 @@ const DEV_FIXTURES: Work[] = [
     year: 2026,
   },
   {
+    slug: "word-by-word-hero",
+    href: "/demo/trav",
+    title: "Word-by-word hero",
+    summary:
+      "A cinematic hero where the headline resolves one word at a time, on a timeline that derives itself.",
+    problem:
+      "Staged text reveals are usually hardcoded delays that drift out of sync the moment the copy changes, and they destroy the line breaks the layout depends on.",
+    approach:
+      "Split text nodes into per-word spans at runtime while leaving <br> elements untouched, and have each stage return the time it finished so the next begins exactly there rather than at a guessed offset.",
+    built: [
+      "Runtime word splitting that preserves intended line breaks",
+      "A self-deriving timeline — change the copy and the sequence still lands",
+      "Fully disabled under prefers-reduced-motion",
+    ],
+    visibility: "public",
+    year: 2026,
+  },
+  {
     slug: "orrery",
     href: "/hub",
     title: "Orrery",
