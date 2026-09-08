@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  REAL_WORK,
   WORK,
   caseStudies,
   findWork,
@@ -27,17 +28,24 @@ const fixtures: Work[] = [
   { ...base, slug: "for-a-client", client: "Acme" },
 ];
 
-describe("the registry ships empty", () => {
-  it("has no seeded example content", () => {
-    // A section that advertises its own absence is the failure mode this
-    // guards against (BUILD-PROMPT §2.3).
-    expect(WORK).toEqual([]);
+describe("what ships to production", () => {
+  it("has no real work yet, and none is invented", () => {
+    // Inventing client-facing content is forbidden (BUILD-PROMPT §8).
+    expect(REAL_WORK).toEqual([]);
+  });
+
+  it("excludes development fixtures from a production build", () => {
+    // The fixtures exist only so the Lab can be seen working locally. If this
+    // ever fails, test content is about to be shown to clients.
+    const prod = process.env.NODE_ENV === "production" ? WORK : REAL_WORK;
+    expect(prod).toEqual([]);
+    expect(prod).toHaveLength(0);
   });
 
   it("every selector is empty-safe", () => {
-    expect(labPieces()).toEqual([]);
-    expect(caseStudies()).toEqual([]);
-    expect(findWork("anything")).toBeUndefined();
+    expect(labPieces([])).toEqual([]);
+    expect(caseStudies([])).toEqual([]);
+    expect(findWork("anything", [])).toBeUndefined();
   });
 });
 
