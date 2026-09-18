@@ -32,9 +32,16 @@ but not geometry, not the canvas, not the shell. See BUILD-PROMPT §0 and §2.
 
 ## Current phase
 
-**Phase 2 — the world.** The orrery is ported from v1 and running behind the
-hero. Phases 0 and 1 are done: foundation, tokens, motion library, Access
-gate, and the full front-face shell (`/`, `/lab`, `/studio`, `/contact`).
+**Phases 0–2 done.** Foundation, tokens, motion library, Access gate, the
+full front face (`/`, `/lab`, `/studio`, `/contact`), and the orrery ported
+from v1 and mounted at `/hub`. The public hero is type + staged entrance +
+drifting CSS atmosphere; `HERO_MODE` in `lib/site.ts` is `"none"` (the coded
+field and video paths exist behind that switch). Lab demos under `/demo/*` are
+development-only and 404 in production.
+
+**Dev server gotcha:** never run `npm run cf-build` while `npm run dev` is
+running — they share `.next/` and the build kills the dev server. If it dies,
+`rm -rf .next && npm run dev`.
 
 **Still open:** the Lab set — three to five real, working, deployed pieces.
 The registry in `lib/content.ts` is empty by design and every section driven
@@ -90,3 +97,13 @@ bundler and passes green while the deploy is broken.
 This repo shares a remote with v1 (`gitlab.com:n2s3/n2s-platform`) but has
 **unrelated history**. Work happens on `v2`. `main` holds the v1 app and is
 still wired to Cloudflare — leave it alone until Adrian decides to cut over.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
