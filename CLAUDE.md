@@ -34,10 +34,26 @@ but not geometry, not the canvas, not the shell. See BUILD-PROMPT §0 and §2.
 
 **Phases 0–2 done.** Foundation, tokens, motion library, Access gate, the
 full front face (`/`, `/lab`, `/studio`, `/contact`), and the orrery ported
-from v1 and mounted at `/hub`. The public hero is type + staged entrance +
-drifting CSS atmosphere; `HERO_MODE` in `lib/site.ts` is `"none"` (the coded
-field and video paths exist behind that switch). Lab demos under `/demo/*` are
-development-only and 404 in production.
+from v1 and mounted at `/hub`.
+
+**The front face is now a scroll film** (`HERO_MODE = "film"` in
+`lib/site.ts`, code in `components/film/`). Glass shards drift as debris on the
+right, pour toward a small core light as you scroll, and become the **N2S mark
+in crystal glass** (`film/mark.ts`, traced from `public/brand/n2s-icon.png`).
+Lenis smooth scroll; the camera follows one keyframe per `[data-film]`
+section. Adrian approved: crystal look, darker tone, quiet matte debris.
+
+**Next, agreed with Adrian:**
+1. Pages as places in one 3D world — the canvas moves to the site layout and
+   the camera *flies* between Home / Lab / Studio / Contact.
+2. F1-style telemetry on the hub's solar system (real orbital data). Look not
+   yet chosen: HUD, racing-line trails, wind-tunnel flow, or pit-wall.
+3. Later: the "spaceman" style animation for the solar system.
+
+**Seeing the 3D:** the agent's preview pane is a hidden document and never
+renders WebGL. Adrian enabled Safari → Developer → "Allow JavaScript from
+Apple Events"; the agent reads his localhost:3000 tab with `osascript … do
+JavaScript`, and `window.__n2sSnap()` (dev only) captures real frames.
 
 **Dev server gotcha:** never run `npm run cf-build` while `npm run dev` is
 running — they share `.next/` and the build kills the dev server. If it dies,
