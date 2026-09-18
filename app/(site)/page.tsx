@@ -9,6 +9,7 @@ import { HeroVideo } from "@/components/site/hero-video";
 import { MorphBackdrop } from "@/components/site/morph/MorphBackdrop";
 import { HeroForms } from "@/components/site/morph/HeroForms";
 import { DevHud } from "@/components/site/morph/DevHud";
+import { FilmBackdrop } from "@/components/film/FilmBackdrop";
 
 /**
  * The front face (docs/BUILD-PROMPT.md §2.1).
@@ -22,13 +23,15 @@ export default function Home() {
   return (
     <main>
       {HERO_MODE === "particles" && <DevHud />}
+      {HERO_MODE === "film" && <FilmBackdrop />}
       {/* 1 — HERO */}
-      <section className="relative w-full overflow-hidden">
+      <section data-film="hero" className="relative w-full overflow-hidden">
         {/*
           Media is full-bleed across the viewport; content stays in the reading
           column. The section itself must NOT be max-width constrained, or the
           video renders as a box in the middle of the page.
         */}
+        {HERO_MODE !== "film" && (
         <div aria-hidden className="absolute inset-0 overflow-hidden">
           {HERO_MODE === "video" && (
             <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
@@ -49,6 +52,7 @@ export default function Home() {
           )}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[var(--background)]" />
         </div>
+        )}
 
       <div className="relative mx-auto flex min-h-[86vh] max-w-5xl flex-col justify-center px-6 py-20">
 
@@ -94,7 +98,7 @@ export default function Home() {
       </section>
 
       {/* 2 — STATEMENT */}
-      <section className="mx-auto max-w-5xl px-6 py-28 md:py-40">
+      <section data-film="statement" className="mx-auto max-w-5xl px-6 py-28 md:py-40">
         <Reveal>
           <p className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
             What we&rsquo;re for
@@ -110,7 +114,7 @@ export default function Home() {
       </section>
 
       {/* 3 — FEATURED PLATE */}
-      <section className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
+      <section data-film="featured" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
         <Reveal>
           <MotionPlate className="relative aspect-video w-full rounded-3xl">
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -132,7 +136,7 @@ export default function Home() {
       </section>
 
       {/* 4 — APPROACH */}
-      <section className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
+      <section data-film="approach" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
         <Reveal>
           <h2 className="font-display text-4xl tracking-[-0.02em] md:text-6xl">
             Judgment <span className="n2s-em">×</span> execution
@@ -161,7 +165,7 @@ export default function Home() {
       </section>
 
       {/* 5 — SERVICES */}
-      <section id="services" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
+      <section data-film="services" id="services" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
         <Reveal>
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-3xl tracking-[-0.02em] md:text-5xl">
@@ -193,7 +197,7 @@ export default function Home() {
       </section>
 
       {/* 6 — WHO (audience) */}
-      <section className="mx-auto max-w-5xl px-6 pb-28 md:pb-40">
+      <section data-film="audience" className="mx-auto max-w-5xl px-6 pb-28 md:pb-40">
         <Reveal>
           <p className="font-mono text-xs tracking-[0.2em] text-muted uppercase">
             Who we work with
@@ -214,7 +218,7 @@ export default function Home() {
         announces its own absence is §2.3 failure mode #1.
       */}
       {lab.length > 0 && (
-        <section className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
+        <section data-film="work" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
           <Reveal>
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-3xl tracking-[-0.02em] md:text-5xl">
@@ -248,7 +252,7 @@ export default function Home() {
       )}
 
       {/* 7 — CONTACT */}
-      <section className="mx-auto max-w-5xl px-6 pb-32">
+      <section data-film="contact" className="mx-auto max-w-5xl px-6 pb-32">
         <Reveal>
           <h2 className="font-display text-4xl tracking-[-0.02em] text-balance md:text-6xl">
             Tell us what isn&rsquo;t working.
