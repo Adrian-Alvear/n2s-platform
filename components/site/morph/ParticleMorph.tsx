@@ -26,6 +26,7 @@ const VERT = /* glsl */ `
   uniform vec3  uPointer;
   uniform float uPointerStrength;
   uniform float uSize;
+  uniform float uPixelRatio;
   attribute vec3 aTo;
   attribute float aSeed;
   varying float vHeat;
@@ -64,7 +65,9 @@ const VERT = /* glsl */ `
     vSeed = aSeed;
 
     vec4 mv = viewMatrix * world;
-    gl_PointSize = uSize * uBoot * (0.6 + fract(aSeed * 13.7) * 0.8) / -mv.z;
+    // Sized in CSS pixels: gl_PointSize is in framebuffer pixels, so it must
+    // be scaled by the pixel ratio or points shrink on high-density screens.
+    gl_PointSize = uSize * uPixelRatio * uBoot * (0.65 + fract(aSeed * 13.7) * 0.7) / -mv.z;
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -79,13 +82,14 @@ const FRAG = /* glsl */ `
   void main() {
     float d = length(gl_PointCoord - 0.5);
     if (d > 0.5) discard;
-    float a = smoothstep(0.5, 0.08, d);
+    // Solid core, soft rim: a 3px point that is all feather reads as nothing.
+    float a = smoothstep(0.5, 0.22, d);
 
     // Settled particles are silver; moving ones warm to gold — the colour
     // carries the motion.
     vec3 col = mix(uCool, uWarm, vHeat);
     float spark = step(0.965, fract(vSeed * 91.7)) * 0.8;
-    gl_FragColor = vec4(col * (1.15 + spark + vHeat * 0.9), a * (0.55 + vHeat * 0.35) * uBoot);
+    gl_FragColor = vec4(col * (1.2 + spark + vHeat * 0.9), a * (0.8 + vHeat * 0.2) * uBoot);
   }
 `;
 
@@ -102,7 +106,7 @@ export function ParticleMorph({
 }) {
   const points = useRef<THREE.Points>(null!);
   const group = useRef<THREE.Group>(null!);
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
 
   const shapes = useMemo(() => buildShapes(count), [count]);
 
@@ -123,7 +127,8 @@ export function ParticleMorph({
       uBoot: { value: reducedMotion ? 1 : 0 },
       uPointer: { value: new THREE.Vector3(999, 999, 999) },
       uPointerStrength: { value: 0 },
-      uSize: { value: 26 },
+      uSize: { value: 30 },
+      uPixelRatio: { value: 1 },
       uCool: { value: new THREE.Color("#c9d0dc") },
       uWarm: { value: new THREE.Color("#f0d9a8") },
     }),
@@ -178,14 +183,21 @@ export function ParticleMorph({
     if (frames.current % 20 === 0) {
       useDiag.getState().set({ stage: "rendering", frames: frames.current });
     }
+    uniforms.uPixelRatio.value = gl.getPixelRatio();
     const target = useMorph.getState().target;
     if (target !== current.current) retarget(target);
 
-    // Sit to the right of the headline on wide screens; centred and smaller
-    // behind the text on narrow ones.
+    // Fit to what the camera can actually see. A fixed offset was tuned for a
+    // wide screen and pushed the form off the right edge of a squarer window.
+    const cam = camera as THREE.PerspectiveCamera;
+    const halfH = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.position.z;
+    const halfW = halfH * (size.width / size.height);
     const wide = size.width >= 900;
-    group.current.position.x = wide ? 2.7 : 0;
-    group.current.scale.setScalar(wide ? 1 : 0.72);
+    // Forms are ~2.3 units in radius; leave margin on every side.
+    const fit = wide ? Math.min(halfW * 0.38, halfH * 0.45) : Math.min(halfW * 0.55, halfH * 0.34);
+    group.current.position.x = wide ? halfW * 0.5 : 0;
+    group.current.position.y = wide ? 0 : -halfH * 0.35;
+    group.current.scale.setScalar(fit / 2.3);
 
     if (reducedMotion) return;
 

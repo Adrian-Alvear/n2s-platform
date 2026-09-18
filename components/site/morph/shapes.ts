@@ -46,11 +46,11 @@ function cloud(count: number): Float32Array {
   };
   for (let i = 0; i < count; i++) {
     // Gaussian-ish radius, so the cloud has a dense core and thin edges.
-    const r = 3.2 * Math.pow((rand() + rand() + rand()) / 3, 1.4) + 0.4;
+    const r = 2.1 * Math.pow((rand() + rand() + rand()) / 3, 1.4) + 0.3;
     const t = rand() * Math.PI * 2;
     const u = rand() * 2 - 1;
     const k = Math.sqrt(1 - u * u);
-    out.set([r * k * Math.cos(t) * 1.35, r * u * 0.75, r * k * Math.sin(t)], i * 3);
+    out.set([r * k * Math.cos(t) * 1.2, r * u * 0.8, r * k * Math.sin(t)], i * 3);
   }
   return out;
 }
