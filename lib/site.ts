@@ -84,11 +84,13 @@ export const PRINCIPLES = [
  */
 /**
  * Which hero backdrop to use.
+ *   "particles" — a cloud that pours into a form for each service and parts
+ *                 around the cursor. Ours; the default.
  *   "coded" — the generated field. A few KB, fully tunable, ours.
  *   "video" — HERO_VIDEO below. Reference footage; dev-only until owned.
  *   "none"  — CSS atmosphere alone.
  */
-export const HERO_MODE: "coded" | "video" | "none" = "none";
+export const HERO_MODE: "particles" | "coded" | "video" | "none" = "particles";
 
 export const HERO_VIDEO =
   process.env.NODE_ENV === "production"

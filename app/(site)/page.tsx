@@ -6,6 +6,8 @@ import { GlassLink } from "@/components/glass-link";
 import { SiteBackdrop } from "@/components/site-backdrop";
 import { MotionPlate } from "@/components/site/motion-plate";
 import { HeroVideo } from "@/components/site/hero-video";
+import { MorphBackdrop } from "@/components/site/morph/MorphBackdrop";
+import { HeroForms } from "@/components/site/morph/HeroForms";
 
 /**
  * The front face (docs/BUILD-PROMPT.md §2.1).
@@ -30,6 +32,7 @@ export default function Home() {
             <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} />
           )}
           {HERO_MODE === "coded" && <SiteBackdrop />}
+          {HERO_MODE === "particles" && <MorphBackdrop />}
           {/*
             Scrims are for VIDEO only. Footage is bright and needs knocking
             back for the type to read. The coded scene is already dark and
@@ -38,7 +41,7 @@ export default function Home() {
           {HERO_MODE === "video" && (
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
           )}
-          {HERO_MODE === "coded" && (
+          {(HERO_MODE === "coded" || HERO_MODE === "particles") && (
             /* Just enough to protect the headline, and only on the left. */
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-transparent" />
           )}
@@ -76,6 +79,15 @@ export default function Home() {
             How we work <span className="n2s-arrow">→</span>
           </Link>
         </div>
+
+        {HERO_MODE === "particles" && (
+          <div
+            className="n2s-above n2s-rise mt-14"
+            style={{ animationDelay: "480ms" }}
+          >
+            <HeroForms />
+          </div>
+        )}
       </div>
       </section>
 
@@ -147,7 +159,7 @@ export default function Home() {
       </section>
 
       {/* 5 — SERVICES */}
-      <section className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
+      <section id="services" className="mx-auto max-w-6xl px-6 pb-28 md:pb-40">
         <Reveal>
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-3xl tracking-[-0.02em] md:text-5xl">
