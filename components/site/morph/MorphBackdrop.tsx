@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { useDiag } from "./diag";
 
 /**
  * Loads the particle hero so it can never delay the page (§4.2): dynamic
@@ -26,16 +27,18 @@ export function MorphBackdrop() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!webglAvailable()) return;
+    const ok = webglAvailable();
+    useDiag.getState().set({ webgl: ok ? "yes" : "NO", stage: ok ? "waiting for idle" : "no webgl — skipped" });
+    if (!ok) return;
     const w = window as typeof window & {
       requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
       cancelIdleCallback?: (id: number) => void;
     };
     if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(() => setReady(true), { timeout: 1500 });
+      const id = w.requestIdleCallback(() => { useDiag.getState().set({ stage: "loading 3d code" }); setReady(true); }, { timeout: 1500 });
       return () => w.cancelIdleCallback?.(id);
     }
-    const id = window.setTimeout(() => setReady(true), 300);
+    const id = window.setTimeout(() => { useDiag.getState().set({ stage: "loading 3d code" }); setReady(true); }, 300);
     return () => window.clearTimeout(id);
   }, []);
 

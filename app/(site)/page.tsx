@@ -8,6 +8,7 @@ import { MotionPlate } from "@/components/site/motion-plate";
 import { HeroVideo } from "@/components/site/hero-video";
 import { MorphBackdrop } from "@/components/site/morph/MorphBackdrop";
 import { HeroForms } from "@/components/site/morph/HeroForms";
+import { DevHud } from "@/components/site/morph/DevHud";
 
 /**
  * The front face (docs/BUILD-PROMPT.md §2.1).
@@ -20,6 +21,7 @@ export default function Home() {
 
   return (
     <main>
+      {HERO_MODE === "particles" && <DevHud />}
       {/* 1 — HERO */}
       <section className="relative w-full overflow-hidden">
         {/*

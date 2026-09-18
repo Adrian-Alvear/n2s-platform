@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { buildShapes } from "./shapes";
 import { useMorph } from "./store";
+import { useDiag } from "./diag";
 
 /**
  * The hero's particles: a loose cloud that pours into a shape for each
@@ -171,7 +172,12 @@ export function ParticleMorph({
   const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), []);
   const hit = useMemo(() => new THREE.Vector3(), []);
 
+  const frames = useRef(0);
   useFrame((_, delta) => {
+    frames.current += 1;
+    if (frames.current % 20 === 0) {
+      useDiag.getState().set({ stage: "rendering", frames: frames.current });
+    }
     const target = useMorph.getState().target;
     if (target !== current.current) retarget(target);
 
