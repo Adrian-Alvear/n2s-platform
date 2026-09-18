@@ -116,6 +116,8 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
   const mark = useMemo(() => markGeometry(RADIUS), []);
   const tiles = useMemo(() => buildTiles(mark), [mark]);
   const solid = useRef<THREE.Mesh>(null!);
+  // The loose shards' material, so their finish can follow the assembly.
+  const tileMat = useRef<(THREE.MeshPhysicalMaterial & { chromaticAberration: number }) | null>(null);
   const geometry = useMemo(prism, []);
   const clock = useRef(0);
 
@@ -166,6 +168,17 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
       mesh.current.setMatrixAt(i, m);
     }
     mesh.current.instanceMatrix.needsUpdate = true;
+
+    // Loose shards are quiet — frosted and dim, so the debris never competes
+    // with the mark — and gain their shine as they land. The finished mark is
+    // the thing that sparkles.
+    if (tileMat.current) {
+      const shine = smooth(0.15, 0.85, a);
+      tileMat.current.roughness = 0.32 - 0.26 * shine;
+      tileMat.current.envMapIntensity = 0.45 + 1.35 * shine;
+      tileMat.current.clearcoat = 0.15 + 0.85 * shine;
+      tileMat.current.chromaticAberration = 0.02 + 0.1 * shine;
+    }
     // Once the mark has fully formed the tiles are gone; skip drawing them.
     mesh.current.visible = a < 0.985;
 
@@ -175,7 +188,7 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
     const grow = easeInOut(Math.min(1, a));
     const pulse = reducedMotion ? 1 : 1 + Math.sin(t * 1.3) * 0.04;
     core.current.scale.setScalar((0.1 + grow * 0.26) * pulse * intro);
-    coreLight.current.intensity = (5 + grow * 30) * intro;
+    coreLight.current.intensity = (2.5 + grow * 32) * intro;
 
     const reveal = smooth(0.82, 1, a);
     solid.current.visible = reveal > 0.001;
@@ -224,6 +237,7 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
             chromatic dispersion at the edges (the "expensive" tell), clean
             clear-coat highlights. */}
         <MeshTransmissionMaterial
+          ref={tileMat as never}
           samples={4}
           resolution={512}
           transmission={1}
