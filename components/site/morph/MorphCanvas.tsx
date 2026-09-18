@@ -1,8 +1,8 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import { Component, useEffect, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { useDiag } from "./diag";
 import { prefersReducedMotion } from "@/lib/motion";
 import { ParticleMorph } from "./ParticleMorph";
@@ -27,11 +27,44 @@ class CatchErrors extends Component<{ children: ReactNode }, { failed: boolean }
   }
 }
 
+/**
+ * Development probe: every ~2s, reads back what actually reached the screen
+ * and reports how many pixels are lit. Distinguishes "nothing drawn" from
+ * "drawn but not visible". Runs after the effect composer (priority 2).
+ */
+function PixelProbe() {
+  const { gl } = useThree();
+  const n = useRef(0);
+  useFrame(() => {
+    n.current += 1;
+    if (n.current % 120 !== 60) return;
+    const c = gl.getContext();
+    const w = c.drawingBufferWidth;
+    const h = c.drawingBufferHeight;
+    const buf = new Uint8Array(w * h * 4);
+    c.readPixels(0, 0, w, h, c.RGBA, c.UNSIGNED_BYTE, buf);
+    let lit = 0;
+    let max = 0;
+    let alpha = 0;
+    for (let i = 0; i < buf.length; i += 4) {
+      const v = Math.max(buf[i], buf[i + 1], buf[i + 2]);
+      if (v > max) max = v;
+      if (v > 24) lit += 1;
+      if (buf[i + 3] > alpha) alpha = buf[i + 3];
+    }
+    useDiag.getState().set({ probe: `lit ${lit} of ${w * h} · max colour ${max} · max alpha ${alpha}` });
+  }, 2);
+  return null;
+}
+
 export function MorphCanvas() {
-  const [config, setConfig] = useState<{ count: number; reduced: boolean } | null>(null);
+  const [config, setConfig] = useState<{ count: number; reduced: boolean; noFx: boolean; big: boolean } | null>(null);
 
   useEffect(() => {
-    setConfig({ count: pickCount(), reduced: prefersReducedMotion() });
+    const q = new URLSearchParams(window.location.search);
+    const mode = q.has("nofx") ? "no effects" : q.has("big") ? "big points" : "normal";
+    useDiag.getState().set({ mode });
+    setConfig({ count: pickCount(), reduced: prefersReducedMotion(), noFx: q.has("nofx"), big: q.has("big") });
   }, []);
 
   if (!config) return null;
@@ -54,10 +87,13 @@ export function MorphCanvas() {
       gl={{ antialias: false, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
-      <ParticleMorph count={config.count} reducedMotion={config.reduced} />
-      <EffectComposer>
-        <Bloom intensity={0.8} luminanceThreshold={0.3} luminanceSmoothing={0.25} mipmapBlur />
-      </EffectComposer>
+      <ParticleMorph count={config.count} reducedMotion={config.reduced} big={config.big} />
+      {!config.noFx && (
+        <EffectComposer>
+          <Bloom intensity={0.8} luminanceThreshold={0.3} luminanceSmoothing={0.25} mipmapBlur />
+        </EffectComposer>
+      )}
+      {process.env.NODE_ENV !== "production" && <PixelProbe />}
     </Canvas>
     </CatchErrors>
   );

@@ -12,6 +12,8 @@ type Diag = {
   frames: number;
   canvas: string;
   error: string;
+  probe: string;
+  mode: string;
   set: (patch: Partial<Omit<Diag, "set">>) => void;
 };
 
@@ -22,5 +24,7 @@ export const useDiag = create<Diag>((set) => ({
   frames: 0,
   canvas: "-",
   error: "",
+  probe: "-",
+  mode: "normal",
   set: (patch) => set(patch),
 }));

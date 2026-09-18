@@ -29,7 +29,8 @@ export function DevHud() {
       <div>hero3d · stage: <b>{d.stage}</b></div>
       <div>webgl: {d.webgl} · canvas: {d.canvas}</div>
       <div>particles: {d.particles} · frames: {d.frames} · form: {target}</div>
-      <div>visible tab: {document.hidden ? "no" : "yes"}</div>
+      <div>visible tab: {document.hidden ? "no" : "yes"} · mode: {d.mode}</div>
+      <div>pixels: {d.probe}</div>
       {d.error && <div style={{ color: "#ff8a8a" }}>error: {d.error}</div>}
     </div>
   );

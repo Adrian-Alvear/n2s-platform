@@ -100,9 +100,12 @@ function ease(t: number) {
 export function ParticleMorph({
   count,
   reducedMotion,
+  big = false,
 }: {
   count: number;
   reducedMotion: boolean;
+  /** Development test: huge points, to rule out "too small to see". */
+  big?: boolean;
 }) {
   const points = useRef<THREE.Points>(null!);
   const group = useRef<THREE.Group>(null!);
@@ -127,12 +130,12 @@ export function ParticleMorph({
       uBoot: { value: reducedMotion ? 1 : 0 },
       uPointer: { value: new THREE.Vector3(999, 999, 999) },
       uPointerStrength: { value: 0 },
-      uSize: { value: 30 },
+      uSize: { value: big ? 160 : 30 },
       uPixelRatio: { value: 1 },
       uCool: { value: new THREE.Color("#c9d0dc") },
       uWarm: { value: new THREE.Color("#f0d9a8") },
     }),
-    [reducedMotion],
+    [reducedMotion, big],
   );
 
   // Pointer, tracked on the window: the canvas sits behind the text and takes
