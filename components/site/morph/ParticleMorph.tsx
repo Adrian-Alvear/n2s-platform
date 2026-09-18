@@ -108,6 +108,11 @@ export function ParticleMorph({
   big?: boolean;
 }) {
   const points = useRef<THREE.Points>(null!);
+  // The material actually being drawn. Per-frame updates go through this,
+  // not through the memoised uniforms object: in development the two can
+  // diverge (the drawn material ends up holding a different uniforms object),
+  // which froze uBoot at 0 and drew every particle at size zero.
+  const mat = useRef<THREE.ShaderMaterial>(null!);
   const group = useRef<THREE.Group>(null!);
   const { camera, size, gl } = useThree();
 
@@ -158,7 +163,8 @@ export function ParticleMorph({
   const retarget = (next: number) => {
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
     const to = geometry.getAttribute("aTo") as THREE.BufferAttribute;
-    const mix = uniforms.uMix.value;
+    const U = mat.current.uniforms;
+    const mix = U.uMix.value;
     const from = pos.array as Float32Array;
     const dest = to.array as Float32Array;
     for (let i = 0; i < count; i++) {
@@ -172,7 +178,7 @@ export function ParticleMorph({
     dest.set(shapes[next + 1]);
     pos.needsUpdate = true;
     to.needsUpdate = true;
-    uniforms.uMix.value = reducedMotion ? 1 : 0;
+    U.uMix.value = reducedMotion ? 1 : 0;
     current.current = next;
   };
 
@@ -182,11 +188,13 @@ export function ParticleMorph({
 
   const frames = useRef(0);
   useFrame((_, delta) => {
+    if (!mat.current) return;
+    const U = mat.current.uniforms;
     frames.current += 1;
     if (frames.current % 20 === 0) {
       useDiag.getState().set({ stage: "rendering", frames: frames.current });
     }
-    uniforms.uPixelRatio.value = gl.getPixelRatio();
+    U.uPixelRatio.value = gl.getPixelRatio();
     const target = useMorph.getState().target;
     if (target !== current.current) retarget(target);
 
@@ -204,24 +212,25 @@ export function ParticleMorph({
 
     if (reducedMotion) return;
 
-    uniforms.uTime.value += delta;
-    uniforms.uBoot.value = Math.min(1, uniforms.uBoot.value + delta / 1.6);
-    uniforms.uMix.value = Math.min(1, uniforms.uMix.value + delta / MORPH_SECONDS);
+    U.uTime.value += delta;
+    U.uBoot.value = Math.min(1, U.uBoot.value + delta / 1.6);
+    U.uMix.value = Math.min(1, U.uMix.value + delta / MORPH_SECONDS);
     group.current.rotation.y += delta * 0.12;
-    group.current.rotation.x = Math.sin(uniforms.uTime.value * 0.2) * 0.12;
+    group.current.rotation.x = Math.sin(U.uTime.value * 0.2) * 0.12;
 
     // Cursor influence fades in while the pointer moves and out when it rests.
     const active = performance.now() / 1000 - lastMove.current < 1.4;
-    const s = uniforms.uPointerStrength;
+    const s = U.uPointerStrength;
     s.value += ((active ? 1 : 0) - s.value) * Math.min(1, delta * 4);
     raycaster.setFromCamera(ndc.current, camera);
-    if (raycaster.ray.intersectPlane(plane, hit)) uniforms.uPointer.value.copy(hit);
+    if (raycaster.ray.intersectPlane(plane, hit)) U.uPointer.value.copy(hit);
   });
 
   return (
     <group ref={group}>
       <points ref={points} geometry={geometry} frustumCulled={false}>
         <shaderMaterial
+          ref={mat}
           vertexShader={VERT}
           fragmentShader={FRAG}
           uniforms={uniforms}

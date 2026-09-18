@@ -72,7 +72,12 @@ export function MorphCanvas() {
   return (
     <CatchErrors>
     <Canvas
-      onCreated={({ gl, size }) => {
+      onCreated={({ gl, size, scene, camera }) => {
+        // Development only: expose the renderer so the scene can be inspected
+        // from the browser console (and by the agent through Safari).
+        if (process.env.NODE_ENV !== "production") {
+          (window as unknown as { __n2s: unknown }).__n2s = { gl, scene, camera };
+        }
         useDiag.getState().set({
           stage: "canvas created",
           particles: config.count,
