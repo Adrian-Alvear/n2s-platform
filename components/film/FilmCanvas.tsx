@@ -3,9 +3,11 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, Noise, ToneMapping, Vignette } from "@react-three/postprocessing";
+import { BlendFunction, ToneMappingMode } from "postprocessing";
 import { prefersReducedMotion } from "@/lib/motion";
 import { Shards } from "./Shards";
+import { Backdrop } from "./Backdrop";
 import { FilmCamera } from "./FilmCamera";
 import { film } from "./film";
 
@@ -66,12 +68,14 @@ export function FilmCanvas() {
       <Canvas
         camera={{ position: [0, 0.6, 55], fov: 38 }}
         dpr={[1, 1.5]}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
-        style={{ background: "transparent" }}
+        // flat: tone mapping happens once, in the AgX pass at the end.
+        flat
+        gl={{ antialias: false, powerPreference: "high-performance" }}
       >
         {/* Depth fog in the void colour: far debris sinks into the dark,
             so near tiles read in front of it. */}
-        <fog attach="fog" args={["#05060a", 11, 34]} />
+        <fog attach="fog" args={["#020306", 12, 34]} />
+        <Backdrop />
         <ambientLight intensity={0.15} />
         <directionalLight position={[4, 6, 5]} intensity={1.2} color="#f4f6fa" />
         <directionalLight position={[-6, -2, -4]} intensity={0.6} color="#f0d9a8" />
@@ -88,8 +92,14 @@ export function FilmCanvas() {
         <FilmCamera reducedMotion={reduced} />
         <Shards reducedMotion={reduced} />
 
-        <EffectComposer>
-          <Bloom intensity={0.55} luminanceThreshold={0.82} luminanceSmoothing={0.2} mipmapBlur />
+        {/* Film finish: highlights roll off (AgX) instead of clipping,
+            glints bloom softly, a whisper of grain stops banding in the
+            gradients, and a light vignette holds the eye in frame. */}
+        <EffectComposer multisampling={4}>
+          <Bloom intensity={0.45} luminanceThreshold={0.9} luminanceSmoothing={0.15} mipmapBlur />
+          <ToneMapping mode={ToneMappingMode.AGX} />
+          <Vignette offset={0.28} darkness={0.7} />
+          <Noise opacity={0.028} blendFunction={BlendFunction.SOFT_LIGHT} />
         </EffectComposer>
         {process.env.NODE_ENV !== "production" && <DevSnapshot />}
       </Canvas>

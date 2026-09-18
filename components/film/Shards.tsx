@@ -2,8 +2,10 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { MeshTransmissionMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { film } from "./film";
+import { markGeometry, markTargets } from "./mark";
 
 /**
  * The film's subject: glass tiles that begin scattered through the dark and,
@@ -15,8 +17,8 @@ import { film } from "./film";
  * InstancedMesh, so the whole thing is a single draw call.
  */
 
+/** Outer radius of the mark's ring, in world units. */
 const RADIUS = 2.3;
-const DETAIL = 2; // 320 faces → 320 tiles
 const INTRO_SECONDS = 2.8;
 
 /** How assembled the form is at each chapter (sections in page order). */
@@ -31,6 +33,10 @@ function lerpChapter(table: number[], chapter: number) {
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
+const smooth = (e0: number, e1: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+};
 
 type Tile = {
   target: THREE.Vector3;
@@ -53,45 +59,31 @@ function prism(): THREE.BufferGeometry {
   }
   shape.closePath();
   const g = new THREE.ExtrudeGeometry(shape, {
-    depth: 0.14,
+    depth: 0.16,
     bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.03,
-    bevelSegments: 1,
+    bevelThickness: 0.05,
+    bevelSize: 0.06,
+    bevelSegments: 2,
   });
-  g.translate(0, 0, -0.07);
+  g.translate(0, 0, -0.08);
   g.computeVertexNormals();
   return g;
 }
 
-function buildTiles(): Tile[] {
-  const solid = new THREE.IcosahedronGeometry(RADIUS, DETAIL);
-  const pos = solid.getAttribute("position");
+const TILE_COUNT = 1100;
+
+function buildTiles(markGeom: THREE.BufferGeometry): Tile[] {
+  const targets = markTargets(markGeom, TILE_COUNT);
   const tiles: Tile[] = [];
-  const v0 = new THREE.Vector3();
-  const v1 = new THREE.Vector3();
-  const v2 = new THREE.Vector3();
   let s = 3;
   const rand = () => {
     s = (s * 16807) % 2147483647;
     return (s - 1) / 2147483646;
   };
 
-  for (let f = 0; f < pos.count; f += 3) {
-    v0.fromBufferAttribute(pos, f);
-    v1.fromBufferAttribute(pos, f + 1);
-    v2.fromBufferAttribute(pos, f + 2);
-    const centre = new THREE.Vector3().add(v0).add(v1).add(v2).divideScalar(3);
-    const normal = centre.clone().normalize();
-    const tangent = v0.clone().sub(centre).normalize();
-    const bitangent = new THREE.Vector3().crossVectors(normal, tangent);
-    const basis = new THREE.Matrix4().makeBasis(tangent, bitangent, normal);
-    const targetQ = new THREE.Quaternion().setFromRotationMatrix(basis);
-
-    // Debris field: wide and shallow, weighted away from the centre so the
-    // form has room to appear in the middle of it.
-    // Skewed right (x from -4 to 10) so the debris gathers beside the text
-    // column rather than over it.
+  for (const t of targets) {
+    // Debris field, skewed right (x from 0.5 to 12) so it gathers beside the
+    // text column rather than over it.
     const scatter = new THREE.Vector3(
       0.5 + Math.pow(rand(), 0.9) * 11.5,
       (rand() - 0.5) * 9,
@@ -101,28 +93,29 @@ function buildTiles(): Tile[] {
       new THREE.Euler(rand() * 6.28, rand() * 6.28, rand() * 6.28),
     );
     const spinAxis = new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize();
-    // Intro: everything starts far behind the camera's resting view and falls in.
+    // Intro: everything starts far behind the resting view and falls in.
     const intro = scatter.clone().multiplyScalar(0.3).add(new THREE.Vector3(0, 0, -45 - rand() * 20));
 
     tiles.push({
-      target: centre.multiplyScalar(1.004),
-      targetQ,
+      target: t.position,
+      targetQ: t.quaternion,
       scatter,
       scatterQ,
       spinAxis,
       intro,
-      scale: v0.distanceTo(centre) * 0.97,
+      scale: t.scale,
       seed: rand(),
     });
   }
-  solid.dispose();
   return tiles;
 }
 
 export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
   const mesh = useRef<THREE.InstancedMesh>(null!);
   const group = useRef<THREE.Group>(null!);
-  const tiles = useMemo(buildTiles, []);
+  const mark = useMemo(() => markGeometry(RADIUS), []);
+  const tiles = useMemo(() => buildTiles(mark), [mark]);
+  const solid = useRef<THREE.Mesh>(null!);
   const geometry = useMemo(prism, []);
   const clock = useRef(0);
 
@@ -132,6 +125,8 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
   const spin = useMemo(() => new THREE.Quaternion(), []);
   const sc = useMemo(() => new THREE.Vector3(), []);
   const assembled = useRef(reducedMotion ? 1 : 0);
+  const core = useRef<THREE.Mesh>(null!);
+  const coreLight = useRef<THREE.PointLight>(null!);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -162,32 +157,90 @@ export function Shards({ reducedMotion }: { reducedMotion: boolean }) {
 
       // Smaller while scattered (lighter behind the text), full size once
       // the tile has found its face.
-      sc.setScalar(tile.scale * (0.35 + 0.65 * intro) * (0.6 + 0.4 * local));
+      // Smaller while scattered, full size on landing, then absorbed into
+      // the solid mark as it materialises.
+      let absorb = 1 - smooth(0.82, 1, a);
+      if (absorb < 0.03) absorb = 0;
+      sc.setScalar(tile.scale * (0.35 + 0.65 * intro) * (0.6 + 0.4 * local) * absorb);
       m.compose(p, q, sc);
       mesh.current.setMatrixAt(i, m);
     }
     mesh.current.instanceMatrix.needsUpdate = true;
+    // Once the mark has fully formed the tiles are gone; skip drawing them.
+    mesh.current.visible = a < 0.985;
+
+    // The light inside: a spark while the tiles are debris, growing into the
+    // core the finished form glows with. The glass refracts it — that inner
+    // light is what makes the form read as crystal rather than dark plastic.
+    const grow = easeInOut(Math.min(1, a));
+    const pulse = reducedMotion ? 1 : 1 + Math.sin(t * 1.3) * 0.04;
+    core.current.scale.setScalar((0.1 + grow * 0.26) * pulse * intro);
+    coreLight.current.intensity = (5 + grow * 30) * intro;
+
+    const reveal = smooth(0.82, 1, a);
+    solid.current.visible = reveal > 0.001;
+    solid.current.scale.setScalar(0.94 + 0.06 * reveal);
 
     // The finished form turns slowly; the debris field turns with it.
     if (!reducedMotion) {
-      group.current.rotation.y += dt * (0.06 + a * 0.1);
+      // Debris turns slowly; the finished mark settles facing the viewer and
+      // sways, so it always reads as the logo rather than going edge-on.
+      const sway = Math.sin(t * 0.28) * 0.42 + Math.sin(t * 0.17) * 0.12;
+      group.current.rotation.y = THREE.MathUtils.lerp(t * 0.06, sway, smooth(0.5, 1, a));
       group.current.rotation.x = Math.sin(t * 0.15) * 0.08;
     }
   });
 
   return (
     <group ref={group}>
-      <instancedMesh ref={mesh} args={[geometry, undefined, tiles.length]} frustumCulled={false}>
-        {/* Polished dark glass: the look comes from sharp reflections of the
-            light strips in the environment, not from colour. */}
-        <meshPhysicalMaterial
-          color="#8e97a6"
-          metalness={0.7}
-          roughness={0.14}
+      <mesh ref={core} position={[0, 0, -0.55]}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial color={[1.6, 1.45, 1.2]} toneMapped={false} />
+      </mesh>
+      <pointLight ref={coreLight} position={[0, 0, -0.4]} color="#f3e6cc" distance={9} decay={1.6} />
+      <mesh ref={solid} geometry={mark} visible={false}>
+        <MeshTransmissionMaterial
+          samples={8}
+          resolution={1280}
+          transmission={1}
+          thickness={0.9}
+          roughness={0.04}
+          ior={1.5}
+          chromaticAberration={0.1}
+          anisotropicBlur={0.1}
+          distortion={0}
+          distortionScale={0.3}
+          temporalDistortion={0}
           clearcoat={1}
-          clearcoatRoughness={0.06}
-          envMapIntensity={1.7}
-          flatShading
+          clearcoatRoughness={0.03}
+          attenuationDistance={2}
+          attenuationColor="#dbe3f0"
+          color="#f2f5fa"
+          envMapIntensity={1.8}
+        />
+      </mesh>
+      <instancedMesh ref={mesh} args={[geometry, undefined, tiles.length]} frustumCulled={false}>
+        {/* Real glass: refraction of the lit backdrop, a whisper of
+            chromatic dispersion at the edges (the "expensive" tell), clean
+            clear-coat highlights. */}
+        <MeshTransmissionMaterial
+          samples={4}
+          resolution={512}
+          transmission={1}
+          thickness={0.6}
+          roughness={0.06}
+          ior={1.48}
+          chromaticAberration={0.12}
+          anisotropicBlur={0.12}
+          distortion={0.08}
+          distortionScale={0.35}
+          temporalDistortion={0}
+          clearcoat={1}
+          clearcoatRoughness={0.04}
+          attenuationDistance={1.6}
+          attenuationColor="#d9e1ee"
+          color="#eef2f8"
+          envMapIntensity={1.8}
         />
       </instancedMesh>
     </group>
