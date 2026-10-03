@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
+import { OrbitControls } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import { NEBULA_MACRO, SUNGOLD } from "@/lib/ecosystem/config";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -34,6 +35,22 @@ export function EcosystemCanvas() {
       style={{ background: "transparent" }}
     >
       <Nebula tint={NEBULA_MACRO} core={SUNGOLD} strength={0.5} />
+      {/* Drag to orbit, scroll to zoom. Disabled until the intro flight has
+          landed, then it owns the camera; auto-rotate supplies the idle drift
+          and any drag interrupts it. Panning is off so the sun stays centred. */}
+      <OrbitControls
+        makeDefault
+        enabled={false}
+        enablePan={false}
+        enableDamping
+        dampingFactor={0.06}
+        rotateSpeed={0.5}
+        zoomSpeed={0.7}
+        minDistance={4}
+        maxDistance={70}
+        autoRotate={!reduced}
+        autoRotateSpeed={0.22}
+      />
       <CameraRig reducedMotion={reduced} />
       <Orrery />
       <EffectComposer>

@@ -65,7 +65,7 @@ export function HubWorld() {
   return (
     <div
       aria-hidden
-      className="n2s-backdrop-fixed"
+      className="fixed inset-0 z-0 [touch-action:none]"
     >
       <EcosystemCanvas />
     </div>

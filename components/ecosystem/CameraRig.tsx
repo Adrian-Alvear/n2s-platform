@@ -10,13 +10,15 @@ import { BOOT_SECONDS } from "@/lib/ecosystem/config";
  * BOOT_SECONDS on easeOutQuint — most of the distance is covered early, so it
  * reads as arriving and settling rather than gliding along a rail.
  *
- * Afterwards it drifts on two sine waves at unrelated periods, so the loop
- * never lands on itself and the scene never looks frozen.
+ * Once the flight lands, the rig lets go and OrbitControls takes over, so
+ * the system can be dragged and zoomed. The gentle idle motion afterwards is
+ * the controls' own auto-rotate, which a drag interrupts.
  *
  * Entirely frame-loop driven: zero React renders.
  */
 export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
-  const { camera } = useThree();
+  const { camera, controls } = useThree();
+  const handedOver = useRef(false);
   const t = useRef(0);
   const target = useRef(new THREE.Vector3(0, 0, 0));
 
@@ -32,20 +34,28 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
       return;
     }
 
+    // The mouse owns the camera from the moment the flight lands.
+    if (handedOver.current) return;
+
     t.current += delta;
     const p = Math.min(1, t.current / BOOT_SECONDS);
     const eased = 1 - Math.pow(1 - p, 5); // easeOutQuint
 
     camera.position.lerpVectors(START, REST, eased);
 
-    // Idle drift begins only once the flight has landed.
-    if (p >= 1) {
-      const s = t.current - BOOT_SECONDS;
-      camera.position.x += Math.sin(s * 0.11) * 1.6;
-      camera.position.y += Math.sin(s * 0.07) * 0.5;
-    }
-
     camera.lookAt(target.current);
+
+    if (p >= 1) {
+      const orbit = controls as unknown as
+        | { target: THREE.Vector3; enabled: boolean; update: () => void }
+        | null;
+      if (orbit) {
+        orbit.target.copy(target.current);
+        orbit.enabled = true;
+        orbit.update();
+      }
+      handedOver.current = true;
+    }
   });
 
   return null;
