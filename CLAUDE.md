@@ -49,6 +49,15 @@ section. Adrian approved: crystal look, darker tone, quiet matte debris.
 2. F1-style telemetry on the hub's solar system (real orbital data). Look not
    yet chosen: HUD, racing-line trails, wind-tunnel flow, or pit-wall.
 3. Later: the "spaceman" style animation for the solar system.
+4. **Move N2S to GitHub as a private repo** (Adrian's decision, 2026-10-03).
+   SSH to GitHub already works from this Mac as `Adrian-Alvear` (same
+   `~/.ssh/id_ed25519` as GitLab). Steps when it's time: Adrian creates an
+   empty private repo → add it as a second remote and push `v2` (GitLab stays
+   as a backup meanwhile) → later make GitHub the primary. Watch-outs: the live
+   v1 Cloudflare deploy is wired to GitLab `main`; `.gitlab-ci.yml` (Renovate)
+   is GitLab-only; v2 currently shares the `n2s-platform` GitLab repo with v1
+   under unrelated history, so GitHub is the natural place to give v2 its own
+   repo. Decide then whether v1's branches move too.
 
 **Seeing the 3D:** the agent's preview pane is a hidden document and never
 renders WebGL. Adrian enabled Safari → Developer → "Allow JavaScript from
